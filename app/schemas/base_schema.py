@@ -8,7 +8,6 @@ T = TypeVar("T")
 
 
 class BaseLogEntity(BaseModel):
-    id: str
     created: datetime.datetime
     updated: Optional[datetime.datetime] = None
     created_by: Optional[str] = None

@@ -1,6 +1,9 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
-
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    async_sessionmaker,
+    AsyncSession,
+)
+from sqlalchemy.orm import declarative_base
 
 MYSQL_USER = "root"
 MYSQL_PASSWORD = "111111"
@@ -9,19 +12,20 @@ MYSQL_PORT = 3306
 MYSQL_DATABASE = "fastapi"
 
 SQLALCHEMY_DATABASE_URL = (
-    f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@"
+    f"mysql+asyncmy://{MYSQL_USER}:{MYSQL_PASSWORD}@"
     f"{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
 )
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autoflush=False, autocommit=False, bind=engine)
+engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True, future=True)
+AsyncSessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
 
-def get_db():
-    db = SessionLocal()
-    try:
+async def get_db():
+    async with AsyncSessionLocal() as db:
         yield db
-    finally:
-        db.close()
 
+
+async def init_models():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

@@ -1,18 +1,17 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from app.api.v1 import api_router
-from app.db import models
-from app.db.session import engine
+from app.api.v1.router import api_router
+from app.db.session import engine, init_models
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # STARTUP
-    models.Base.metadata.create_all(bind=engine)
+    await init_models()
     yield
-    
-    # SHUTDOWN 
-    engine.dispose()
+
+    # SHUTDOWN
+    await engine.dispose()
 
 app = FastAPI(
     lifespan=lifespan,

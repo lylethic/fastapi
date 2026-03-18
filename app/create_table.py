@@ -1,5 +1,6 @@
-from app.db import models
-from app.db.session import engine
+import asyncio
+
+from app.db.session import init_models
 
 
-models.Base.metadata.create_all(bind=engine)
+asyncio.run(init_models())

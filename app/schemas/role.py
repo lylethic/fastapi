@@ -5,17 +5,17 @@ from pydantic import BaseModel
 from app.schemas.base_schema import BaseLogEntity, BaseModelPagination
 
 
-class PermissionCreateBody(BaseModel):
+class RoleCreateBody(BaseModel):
     name: str
     description: Optional[str] = None
 
-class PermissionUpdateBody(BaseModel):
+class RoleUpdateBody(BaseModel):
     name: str
     description: Optional[str] = None
     active: Optional[bool] = 1
 
 
-class PermissionResponse(BaseLogEntity):
+class RoleResponse(BaseLogEntity):
     id: str
     name: str
     description: Optional[str] = None
@@ -23,5 +23,5 @@ class PermissionResponse(BaseLogEntity):
     model_config = {"from_attributes": True}
 
 
-class PermissionPagination(BaseModelPagination[PermissionResponse]):
+class RolePagination(BaseModelPagination[RoleResponse]):
     pass
