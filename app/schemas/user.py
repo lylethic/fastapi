@@ -1,5 +1,6 @@
-from typing import Optional
-from pydantic import BaseModel
+from datetime import datetime
+from typing import List, Optional
+from pydantic import BaseModel, Field
 
 from app.schemas.base_schema import BaseLogEntity, BaseModelPagination
 
@@ -31,5 +32,32 @@ class UserResponse(BaseLogEntity):
 
     model_config = {"from_attributes": True}
 
+class UserPermissionRoleResponse(BaseModel):
+    """
+    Model User with roles and permissions
+    """
+    id: str
+    name: str
+    email: str
+    username: str
+    profile_pic: Optional[str] = None
+    city: Optional[str] = None
+    last_login_time: Optional[datetime] = None
+    roles: List[str] = []
+    permissions: List[str] = []
+
 class UserPagination(BaseModelPagination[UserResponse]):
     pass
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(..., min_length=1, max_length=255)
+    password: str = Field(..., min_length=6)
+
+class UserPublic(BaseModel):
+    email: str
+    name: Optional[str] = None
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"

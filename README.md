@@ -24,6 +24,17 @@ pip install -r requirements.txt
 python -m app.main
 ```
 
+You can also keep app settings in a project-level `.env` file:
+
+```env
+APP_HOST=127.0.0.1
+APP_PORT=8000
+UPLOAD_DIR=uploads
+JWT_SECRET_KEY=change-me
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+ALGORITHM=HS256
+```
+
 Swagger UI:
 
 ```text

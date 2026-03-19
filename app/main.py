@@ -4,20 +4,18 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+
 from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import api_router
+from app.config import APP_HOST, APP_PORT, UPLOAD_DIR
 from app.db.session import engine, init_models
-
-HOST = os.getenv("APP_HOST", "127.0.0.1")
-PORT = int(os.getenv("APP_PORT", "8000"))
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 logger = logging.getLogger("app.main")
-UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
@@ -25,14 +23,18 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def lifespan(app: FastAPI):
     # STARTUP
     await init_models()
-    logger.info("API is running at http://%s:%s", HOST, PORT)
-    logger.info("Swagger docs: http://%s:%s/docs", HOST, PORT)
+    logger.info("API is running at http://%s:%s", APP_HOST, APP_PORT)
+    logger.info("Swagger docs: http://%s:%s/docs", APP_HOST, APP_PORT)
     yield
 
     # SHUTDOWN
     await engine.dispose()
 
+# Start program
 app = FastAPI(
+    title="Auth API",
+    version="1.0.0",
+    description="Auth API",
     lifespan=lifespan,
     swagger_ui_parameters={
         "syntaxHighlight": {"theme": "obsidian"},
@@ -80,4 +82,4 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app.main:app", host=HOST, port=PORT, reload=True)
+    uvicorn.run("app.main:app", host=APP_HOST, port=APP_PORT, reload=True)

@@ -6,3 +6,5 @@ sqlacodegen
 cryptography
 python-multipart
 passlib[bcrypt]
+pyjwt
+python-dotenv

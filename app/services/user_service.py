@@ -1,18 +1,16 @@
-import hashlib
-import hmac
+import json
 import os
-import secrets
 from uuid import uuid4
 import uuid
 
-from fastapi import File, HTTPException, UploadFile
+from fastapi import Depends, File, HTTPException, UploadFile
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from passlib.context import CryptContext
-
+from app.config import UPLOAD_DIR
 from app.db.models import Users
+from app.utils import hash_password
 
 from app.schemas.user import (
     UserCreateBody,
@@ -22,43 +20,11 @@ from app.schemas.user import (
 )
 
 
-# Define upload image
-UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
 ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-PBKDF2_ITERATIONS = 600000
-
-def hash_password(password: str) -> str:
-    try:
-        salt = secrets.token_hex(16)
-        hashed = hashlib.pbkdf2_hmac(
-            "sha256",
-            password.encode("utf-8"),
-            salt.encode("utf-8"),
-            PBKDF2_ITERATIONS,
-        ).hex()
-        return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${salt}${hashed}"
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail="Password hashing failed") from exc
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    if hashed_password.startswith("pbkdf2_sha256$"):
-        _, iterations, salt, stored_hash = hashed_password.split("$", 3)
-        computed_hash = hashlib.pbkdf2_hmac(
-            "sha256",
-            plain_password.encode("utf-8"),
-            salt.encode("utf-8"),
-            int(iterations),
-        ).hex()
-        return hmac.compare_digest(computed_hash, stored_hash)
-
-    return pwd_context.verify(plain_password, hashed_password)
 
 
 # create
@@ -149,6 +115,13 @@ async def get_user_by_id(db:AsyncSession, id:str) -> Users:
     result = await db.execute(select(Users).where(Users.id == id))
     return result.scalar_one_or_none()
 
+async def get_user_by_email(db:AsyncSession, email:str) -> Users:
+    """
+    Get user by email
+    """
+    result = await db.execute(select(Users).where(Users.email == email))
+    return result.scalar_one_or_none()
+
 async def update_user(db: AsyncSession, id: str, body: UserUpdateBody) -> Users:
     result = await db.execute(select(Users).where(Users.id == id))
     update = result.scalar_one_or_none()
@@ -220,3 +193,80 @@ async def uploadImage(db: AsyncSession, id: str, file: UploadFile = File(...)):
 
     return user
 
+QUERY_USER_WITH_ROLES_PERMISSIONS = """
+SELECT
+    u.id,
+    u.name,
+    u.email,
+    u.username,
+    u.profile_pic,
+    u.city,
+    u.last_login_time,
+    COALESCE(r.roles, JSON_ARRAY()) AS roles,
+    COALESCE(p.permissions, JSON_ARRAY()) AS permissions
+FROM users u
+LEFT JOIN (
+    SELECT
+        t.user_id,
+        JSON_ARRAYAGG(t.role_name) AS roles
+    FROM (
+        SELECT DISTINCT
+            ur.user_id,
+            r.name AS role_name
+        FROM user_roles ur
+        JOIN roles r ON r.id = ur.role_id
+        WHERE ur.active = 1
+          AND ur.deleted = 0
+          AND r.active = 1
+          AND r.deleted = 0
+    ) t
+    GROUP BY t.user_id
+) r ON r.user_id = u.id
+LEFT JOIN (
+    SELECT
+        t.user_id,
+        JSON_ARRAYAGG(t.permission_name) AS permissions
+    FROM (
+        SELECT DISTINCT
+            ur.user_id,
+            p.name AS permission_name
+        FROM user_roles ur
+        JOIN roles r ON r.id = ur.role_id
+        JOIN role_permissions rp ON rp.role_id = r.id
+        JOIN permissions p ON p.id = rp.permission_id
+        WHERE ur.active = 1
+          AND ur.deleted = 0
+          AND r.active = 1
+          AND r.deleted = 0
+          AND rp.active = 1
+          AND rp.deleted = 0
+          AND p.active = 1
+          AND p.deleted = 0
+    ) t
+    GROUP BY t.user_id
+) p ON p.user_id = u.id
+WHERE u.id = :user_id
+  AND u.active = 1
+  AND u.deleted = 0
+"""
+async def get_user_detail(db: AsyncSession, user_id: str ):
+    result = await db.execute(
+        text(QUERY_USER_WITH_ROLES_PERMISSIONS),
+        {"user_id": user_id}
+    )
+    row = result.mappings().first()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user = dict(row)
+
+    if isinstance(user["roles"], str):
+        user["roles"] = json.loads(user["roles"])
+    if isinstance(user["permissions"], str):
+        user["permissions"] = json.loads(user["permissions"])
+
+    user["roles"] = user.get("roles") or []
+    user["permissions"] = user.get("permissions") or []
+
+    return user

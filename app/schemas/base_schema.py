@@ -1,6 +1,7 @@
 import datetime
 from typing import Generic, Optional, TypeVar
 
+from fastapi import Query
 from pydantic import BaseModel
 
 
@@ -22,3 +23,10 @@ class BaseModelPagination(BaseModel, Generic[T]):
     page: int
     page_size: int
     total_pages: int
+
+
+class BaseQueryPaginationRequest:
+    page: int = 1
+    page_size: int = Query(10, ge=1, le=100),
+    active: bool | None = Query(1, ge=0, le=1),
+    search: Optional[str] = None

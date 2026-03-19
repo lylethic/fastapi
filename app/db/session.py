@@ -4,12 +4,8 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
 from sqlalchemy.orm import declarative_base
+from app.config import MYSQL_DATABASE, MYSQL_HOST, MYSQL_PASSWORD, MYSQL_PORT, MYSQL_USER
 
-MYSQL_USER = "root"
-MYSQL_PASSWORD = "111111"
-MYSQL_HOST = "localhost"
-MYSQL_PORT = 3306
-MYSQL_DATABASE = "fastapi"
 
 SQLALCHEMY_DATABASE_URL = (
     f"mysql+asyncmy://{MYSQL_USER}:{MYSQL_PASSWORD}@"
