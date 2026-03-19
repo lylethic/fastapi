@@ -13,7 +13,7 @@ Windows:
 ```bash
 .venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m app.main
 ```
 
 Linux/macOS:
@@ -21,13 +21,29 @@ Linux/macOS:
 ```bash
 source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m app.main
 ```
 
 Swagger UI:
 
 ```text
 http://127.0.0.1:8000/docs
+```
+
+Run with a custom host/port:
+
+Windows:
+
+```bash
+set APP_HOST=0.0.0.0
+set APP_PORT=9000
+python -m app.main
+```
+
+Linux/macOS:
+
+```bash
+APP_HOST=0.0.0.0 APP_PORT=9000 python -m app.main
 ```
 
 Base API prefix:

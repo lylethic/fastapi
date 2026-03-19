@@ -110,9 +110,13 @@ async def update_permission(db: AsyncSession, id: str, body: PermissionUpdateBod
     if body.active is not None:
         permission.active = body.active
 
-    await db.commit()
-    await db.refresh(permission)
-    return permission
+    try:
+        await db.commit()
+        await db.refresh(permission)
+        return permission
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Permission already exists")
 
 ## Delete
 async def delete_permission(db: AsyncSession, id: str) -> Permissions:

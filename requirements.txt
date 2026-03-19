@@ -4,3 +4,5 @@ sqlalchemy
 pymysql
 sqlacodegen
 cryptography
+python-multipart
+passlib[bcrypt]

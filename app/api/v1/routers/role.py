@@ -52,7 +52,7 @@ async def get_role_api(
     return success_response(
         data=roles,
         message="Thành công",
-        message_en="Permissions retrieved successfully",
+        message_en="Roles retrieved successfully",
     )
 
 

@@ -10,7 +10,7 @@ class RoleCreateBody(BaseModel):
     description: Optional[str] = None
 
 class RoleUpdateBody(BaseModel):
-    name: str
+    name: Optional[str] = None
     description: Optional[str] = None
     active: Optional[bool] = 1
 
