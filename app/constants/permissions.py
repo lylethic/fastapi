@@ -1,15 +1,15 @@
 class Permission:
-    CREATE = "CREATE"
+    WRITE = "WRITE"
     VIEW = "VIEW"
-    UPDATE = "UPDATE"
+    EDIT = "EDIT"
     DELETE = "DELETE"
     SYS_ADMIN = "SYS_ADMIN"
 
 
 ALL_PERMISSIONS = (
-    Permission.CREATE,
+    Permission.WRITE,
     Permission.VIEW,
-    Permission.UPDATE,
+    Permission.EDIT,
     Permission.DELETE,
     Permission.SYS_ADMIN,
 )

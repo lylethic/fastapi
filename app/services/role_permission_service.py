@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import RolePermissions
+from app.schemas.base_schema import BaseQueryPaginationRequest
 from app.schemas.rolepermission import (
     RolePermissionCreateBody,
     RolePermissionPagination,
@@ -41,24 +42,20 @@ async def create_role_permission(
 
 
 async def get_role_permissions(
-    db: AsyncSession,
-    page: int = 1,
-    page_size: int = 10,
-    search: str | None = None,
-    active: bool | None = True,
+    db: AsyncSession, pagination: BaseQueryPaginationRequest
 ) -> RolePermissionPagination:
     filters = []
 
-    if search:
+    if pagination.search:
         filters.append(
             or_(
-                RolePermissions.role_id == search,
-                RolePermissions.permission_id == search,
+                RolePermissions.role_id == pagination.search,
+                RolePermissions.permission_id == pagination.search,
             )
         )
 
-    if active is not None:
-        filters.append(RolePermissions.active == active)
+    if pagination.active is not None:
+        filters.append(RolePermissions.active == pagination.active)
 
     count_stmt = select(func.count()).select_from(RolePermissions)
     if filters:
@@ -66,7 +63,9 @@ async def get_role_permissions(
 
     total_result = await db.execute(count_stmt)
     total = total_result.scalar_one()
-    total_pages = (total + page_size - 1) // page_size if total else 0
+    total_pages = (
+        (total + pagination.page_size - 1) // pagination.page_size if total else 0
+    )
 
     stmt = select(RolePermissions)
     if filters:
@@ -74,8 +73,8 @@ async def get_role_permissions(
 
     stmt = (
         stmt.order_by(RolePermissions.created.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
+        .offset((pagination.page - 1) * pagination.page_size)
+        .limit(pagination.page_size)
     )
 
     result = await db.execute(stmt)
@@ -84,8 +83,8 @@ async def get_role_permissions(
     return RolePermissionPagination(
         items=[RolePermissionResponse.model_validate(item) for item in items],
         total=total,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
         total_pages=total_pages,
     )
 
@@ -114,10 +113,15 @@ async def update_role_permission(
 
     next_role_id = body.role_id if body.role_id is not None else role_permission.role_id
     next_permission_id = (
-        body.permission_id if body.permission_id is not None else role_permission.permission_id
+        body.permission_id
+        if body.permission_id is not None
+        else role_permission.permission_id
     )
 
-    if next_role_id != role_permission.role_id or next_permission_id != role_permission.permission_id:
+    if (
+        next_role_id != role_permission.role_id
+        or next_permission_id != role_permission.permission_id
+    ):
         duplicate_result = await db.execute(
             select(RolePermissions).where(
                 RolePermissions.role_id == next_role_id,
@@ -126,7 +130,9 @@ async def update_role_permission(
         )
         duplicate = duplicate_result.scalar_one_or_none()
         if duplicate:
-            raise HTTPException(status_code=400, detail="Role permission already exists")
+            raise HTTPException(
+                status_code=400, detail="Role permission already exists"
+            )
 
     role_permission.role_id = next_role_id
     role_permission.permission_id = next_permission_id

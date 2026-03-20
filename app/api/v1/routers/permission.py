@@ -18,17 +18,29 @@ from app.services.permission_service import (
     get_permission_by_id,
     update_permission,
 )
+from app.schemas.base_schema import BaseQueryPaginationRequest
+from app.services.assistant_service import get_current_user
 
 router = APIRouter(prefix="/permissions", tags=["Permissions"])
+
 
 @router.post(
     "",
     response_model=ApiResponse[PermissionResponse],
     status_code=status.HTTP_200_OK,
-    summary="Create permission"
+    summary="Create permission",
 )
-async def create_permission_api(payload: PermissionCreateBody, db: AsyncSession = Depends(get_db)):
-    permission = await create_permission(db=db, body=payload)
+async def create_permission_api(
+    payload: PermissionCreateBody,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    permission_context: dict = Depends(
+        require_permissions(Permission.SYS_ADMIN, Permission.WRITE)
+    ),
+):
+    permission = await create_permission(
+        db=db, body=payload, current_user=current_user["id"]
+    )
     return success_response(
         data=PermissionResponse.model_validate(permission),
         message="Thành công",
@@ -44,18 +56,9 @@ async def create_permission_api(payload: PermissionCreateBody, db: AsyncSession 
 )
 async def get_permission_api(
     db: AsyncSession = Depends(get_db),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1, le=100),
-    search: str | None = Query(None, title="Search", description="Search by id or name"),
-    active: bool | None = Query(1, ge=0, le=1)
+    pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    permissions = await get_permission(
-        db=db,
-        page=page,
-        page_size=page_size,
-        search=search,
-        active=active
-    )
+    permissions = await get_permission(db=db, pagination=pagination)
     return success_response(
         data=permissions,
         message="Thành công",
@@ -82,13 +85,21 @@ async def get_permission_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.put("/{id}", summary="Update permission")
-async def update(id: str, payload: PermissionUpdateBody, db: AsyncSession = Depends(get_db)):
-    permission = await update_permission(db=db, id=id, body=payload)
+async def update(
+    id: str,
+    payload: PermissionUpdateBody,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    permission = await update_permission(
+        db=db, id=id, body=payload, current_user=current_user["id"]
+    )
     return success_response(
         data=PermissionResponse.model_validate(permission),
         message="Thành công",
         messageEn="Permission updated successfully",
     )
+
 
 @router.delete("/{id}", summary="Delete permission")
 async def delete(

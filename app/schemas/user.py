@@ -12,6 +12,8 @@ class UserCreateBody(BaseModel):
     name: str
     profile_pic: Optional[str] = None
     city: Optional[str] = None
+    role_id: str
+
 
 class UserUpdateBody(BaseModel):
     username: Optional[str] = None
@@ -21,6 +23,7 @@ class UserUpdateBody(BaseModel):
     profile_pic: Optional[str] = None
     city: Optional[str] = None
     active: Optional[bool] = True
+
 
 class UserResponse(BaseLogEntity):
     id: str
@@ -32,10 +35,12 @@ class UserResponse(BaseLogEntity):
 
     model_config = {"from_attributes": True}
 
+
 class UserPermissionRoleResponse(BaseModel):
     """
     Model User with roles and permissions
     """
+
     id: str
     name: str
     email: str
@@ -46,6 +51,7 @@ class UserPermissionRoleResponse(BaseModel):
     roles: List[str] = []
     permissions: List[str] = []
 
+
 class UserPagination(BaseModelPagination[UserResponse]):
     pass
 
@@ -54,11 +60,14 @@ class LoginRequest(BaseModel):
     email: str = Field(..., min_length=1, max_length=255)
     password: str = Field(..., min_length=6)
 
+
 class UserPublic(BaseModel):
     email: str
     name: Optional[str] = None
 
+
 class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    expires_at: Optional[datetime] = None
     user: Optional[object]

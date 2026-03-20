@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.services.user_service import get_role_permission
 
-
 security = HTTPBearer(auto_error=False)
 
 

@@ -28,6 +28,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
                             "name": payload.get("name"),
                         }
                 except JWTError:
-                    request.state.auth_error = "Invalid token"
+                    request.state.auth_error = "Invalid token or token expired"
 
         return await call_next(request)

@@ -13,26 +13,22 @@ from app.schemas.user_role import (
     UserRoleCreateBody,
     UserRoleUpdateBody,
     UserRoleResponse,
-    UserRolePagination
+    UserRolePagination,
 )
+
 
 async def create(db: AsyncSession, body: UserRoleCreateBody) -> UserRoles:
     smtp = select(UserRoles).where(
-        and_(
-            UserRoles.role_id == body.role_id,
-            UserRoles.user_id == body.user_id
-        ))
-    result  = await db.execute(smtp)
+        and_(UserRoles.role_id == body.role_id, UserRoles.user_id == body.user_id)
+    )
+    result = await db.execute(smtp)
     existing = result.scalar_one_or_none()
 
     if existing:
         raise HTTPException(status_code=400, detail="User already has this role")
-    
+
     user_role = UserRoles(
-        user_id=body.user_id,
-        role_id=body.role_id,
-        active=1,
-        deleted=0
+        user_id=body.user_id, role_id=body.role_id, active=1, deleted=0
     )
     try:
         db.add(user_role)
@@ -44,21 +40,21 @@ async def create(db: AsyncSession, body: UserRoleCreateBody) -> UserRoles:
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-async def getAll(
-        db: AsyncSession, 
-        pagination: BaseQueryPaginationRequest,
-        active: bool | None = True,
-        user_id: Optional[str] = None,
-        role_id: Optional[str] = None
-    ) -> UserRolePagination:
+
+async def get_all(
+    db: AsyncSession,
+    pagination: BaseQueryPaginationRequest,
+    user_id: Optional[str] = None,
+    role_id: Optional[str] = None,
+) -> UserRolePagination:
     filters = []
 
-    if active is not None:
-        filters = [UserRoles.active == active]
+    if pagination.active is not None:
+        filters = [UserRoles.active == pagination.active]
 
     if user_id is not None:
         filters.append(UserRoles.user_id == user_id)
-    
+
     if role_id is not None:
         filters.append(UserRoles.role_id == role_id)
 
@@ -66,11 +62,13 @@ async def getAll(
     count_stmt = select(func.count()).select_from(UserRoles)
     if filters:
         count_stmt = count_stmt.where(*filters)
-    
+
     total_result = await db.execute(count_stmt)
     total = total_result.scalar_one()
-    total_pages = (total + pagination.page_size - 1) // pagination.page_size if total else 0
-    
+    total_pages = (
+        (total + pagination.page_size - 1) // pagination.page_size if total else 0
+    )
+
     stmt = select(UserRoles)
     if filters:
         stmt = stmt.where(*filters)
@@ -89,19 +87,13 @@ async def getAll(
         total=total,
         page=pagination.page,
         page_size=pagination.page_size,
-        total_pages=total_pages
+        total_pages=total_pages,
     )
 
-async def getById(
-    db: AsyncSession,
-    user_id: str,
-    role_id: str
-) -> UserRoleResponse:
+
+async def getById(db: AsyncSession, user_id: str, role_id: str) -> UserRoleResponse:
     stmt = select(UserRoles).where(
-        and_(
-            UserRoles.user_id == user_id,
-            UserRoles.role_id == role_id
-        )
+        and_(UserRoles.user_id == user_id, UserRoles.role_id == role_id)
     )
     result = await db.execute(stmt)
     user_role = result.scalar_one_or_none()
@@ -111,10 +103,9 @@ async def getById(
 
     return UserRoleResponse.model_validate(user_role)
 
+
 async def getRoleByUserId(
-    db: AsyncSession,
-    user_id: str,
-    active: Optional[bool] = True
+    db: AsyncSession, user_id: str, active: Optional[bool] = True
 ) -> list[UserRoleResponse]:
     filters = [UserRoles.user_id == user_id]
 
@@ -127,17 +118,12 @@ async def getRoleByUserId(
 
     return [UserRoleResponse.model_validate(item) for item in user_roles]
 
+
 async def update(
-    db: AsyncSession,
-    user_id: str,
-    role_id: str,
-    body: UserRoleUpdateBody
+    db: AsyncSession, user_id: str, role_id: str, body: UserRoleUpdateBody
 ) -> UserRoles:
     stmt = select(UserRoles).where(
-        and_(
-            UserRoles.user_id == user_id,
-            UserRoles.role_id == role_id
-        )
+        and_(UserRoles.user_id == user_id, UserRoles.role_id == role_id)
     )
     result = await db.execute(stmt)
     user_role = result.scalar_one_or_none()
@@ -148,16 +134,15 @@ async def update(
     # Change role to another role
     if body.role_id is not None and body.role_id != role_id:
         check_stmt = select(UserRoles).where(
-            and_(
-                UserRoles.user_id == user_id,
-                UserRoles.role_id == body.role_id
-            )
+            and_(UserRoles.user_id == user_id, UserRoles.role_id == body.role_id)
         )
         check_result = await db.execute(check_stmt)
         duplicate = check_result.scalar_one_or_none()
 
         if duplicate:
-            raise HTTPException(status_code=400, detail="User already has this target role")
+            raise HTTPException(
+                status_code=400, detail="User already has this target role"
+            )
 
         user_role.role_id = body.role_id
 
@@ -172,14 +157,14 @@ async def update(
         return user_role
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=400, detail=f"Update user role failed: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Update user role failed: {str(e)}"
+        )
+
 
 async def delete(db: AsyncSession, user_id: str, role_id: str) -> str:
     stmt = select(UserRoles).where(
-        and_(
-            UserRoles.user_id == user_id,
-            UserRoles.role_id == role_id
-        )
+        and_(UserRoles.user_id == user_id, UserRoles.role_id == role_id)
     )
     result = await db.execute(stmt)
     user_role = result.scalar_one_or_none()
@@ -197,7 +182,6 @@ async def delete(db: AsyncSession, user_id: str, role_id: str) -> str:
         return "Soft delete success"
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=400, detail=f"Soft delete user role failed: {str(e)}")
-
-
-
+        raise HTTPException(
+            status_code=400, detail=f"Soft delete user role failed: {str(e)}"
+        )

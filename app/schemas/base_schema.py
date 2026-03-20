@@ -26,7 +26,14 @@ class BaseModelPagination(BaseModel, Generic[T]):
 
 
 class BaseQueryPaginationRequest:
-    page: int = 1
-    page_size: int = Query(10, ge=1, le=100),
-    active: bool | None = Query(1, ge=0, le=1),
-    search: Optional[str] = None
+    def __init__(
+        self,
+        page: int = Query(1, ge=1),
+        page_size: int = Query(10, ge=1, le=100),
+        active: bool | None = Query(True),
+        search: Optional[str] = Query(None),
+    ) -> None:
+        self.page = page
+        self.page_size = page_size
+        self.active = active
+        self.search = search

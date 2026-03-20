@@ -1,5 +1,5 @@
 from uuid import uuid4
-
+from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy import func, or_, select, and_
 from sqlalchemy.exc import IntegrityError
@@ -7,16 +7,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 ## Model
 from app.db.models import Roles
-
+from app.schemas.base_schema import BaseQueryPaginationRequest
 from app.schemas.role import (
-    RolePagination, 
-    RoleResponse, 
+    RolePagination,
+    RoleResponse,
     RoleCreateBody,
-    RoleUpdateBody
+    RoleUpdateBody,
 )
 
+
 ## Create
-async def create_role(db: AsyncSession, body: RoleCreateBody) -> Roles:
+async def create_role(
+    db: AsyncSession, body: RoleCreateBody, current_user: str | None = None
+) -> Roles:
     result = await db.execute(select(Roles).where(Roles.name == body.name))
     checkRoleExist = result.scalar_one_or_none()
     if checkRoleExist:
@@ -27,6 +30,9 @@ async def create_role(db: AsyncSession, body: RoleCreateBody) -> Roles:
         name=body.name.upper(),
         description=body.description,
     )
+    role.created = datetime.utcnow()
+    if current_user is not None:
+        role.created_by = current_user
     db.add(role)
 
     try:
@@ -40,24 +46,19 @@ async def create_role(db: AsyncSession, body: RoleCreateBody) -> Roles:
 
 ## Get all
 async def get_role(
-    db: AsyncSession,
-    page: int = 1,
-    page_size: int = 10,
-    search: str | None = None,
-    active: bool | None = True,
+    db: AsyncSession, pagination: BaseQueryPaginationRequest
 ) -> RolePagination:
     filters = [Roles.deleted == False]
 
-    if search:
+    if pagination.search:
         filters.append(
             or_(
-                Roles.id == search,
-                Roles.name.ilike(f"%{search}%"),
+                Roles.name.ilike(f"%{pagination.search}%"),
             )
         )
 
-    if active is not None:
-        filters.append(Roles.active == active)
+    if pagination.active is not None:
+        filters.append(Roles.active == pagination.active)
 
     # Count query
     count_stmt = select(func.count()).select_from(Roles)
@@ -67,7 +68,9 @@ async def get_role(
     total_result = await db.execute(count_stmt)
     total = total_result.scalar_one()
 
-    total_pages = (total + page_size - 1) // page_size if total else 0
+    total_pages = (
+        (total + pagination.page_size - 1) // pagination.page_size if total else 0
+    )
 
     # Data query
     stmt = select(Roles)
@@ -76,8 +79,8 @@ async def get_role(
 
     stmt = (
         stmt.order_by(Roles.created.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
+        .offset((pagination.page - 1) * pagination.page_size)
+        .limit(pagination.page_size)
     )
 
     result = await db.execute(stmt)
@@ -86,19 +89,27 @@ async def get_role(
     return RolePagination(
         items=[RoleResponse.model_validate(role) for role in roles],
         total=total,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
         total_pages=total_pages,
     )
 
+
 ## Get by id
 async def get_role_by_id(db: AsyncSession, id: str) -> Roles:
-    result = await db.execute(select(Roles).where(and_(Roles.id == id, Roles.deleted == False)))
+    result = await db.execute(
+        select(Roles).where(and_(Roles.id == id, Roles.deleted == False))
+    )
     return result.scalar_one_or_none()
 
+
 ## Update
-async def update_role(db: AsyncSession, id: str, body: RoleUpdateBody) -> Roles:
-    result = await db.execute(select(Roles).where(Roles.id == id, Roles.deleted == False))
+async def update_role(
+    db: AsyncSession, id: str, body: RoleUpdateBody, current_user: str | None = None
+) -> Roles:
+    result = await db.execute(
+        select(Roles).where(Roles.id == id, Roles.deleted == False)
+    )
     role = result.scalar_one_or_none()
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
@@ -109,6 +120,10 @@ async def update_role(db: AsyncSession, id: str, body: RoleUpdateBody) -> Roles:
     if body.active is not None:
         role.active = body.active
 
+    if current_user is not None:
+        role.updated_by = current_user
+    role.updated = datetime.utcnow()
+
     try:
         await db.commit()
         await db.refresh(role)
@@ -117,9 +132,12 @@ async def update_role(db: AsyncSession, id: str, body: RoleUpdateBody) -> Roles:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Role already exists")
 
+
 ## Soft Delete
 async def delete_role(db: AsyncSession, id: str) -> Roles:
-    result = await db.execute(select(Roles).where(Roles.id == id, Roles.deleted == False))
+    result = await db.execute(
+        select(Roles).where(Roles.id == id, Roles.deleted == False)
+    )
     data = result.scalar_one_or_none()
 
     if not data:
@@ -129,4 +147,3 @@ async def delete_role(db: AsyncSession, id: str) -> Roles:
     await db.commit()
     await db.refresh(data)
     return data
-

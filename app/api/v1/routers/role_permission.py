@@ -18,6 +18,7 @@ from app.services.role_permission_service import (
     get_role_permissions,
     update_role_permission,
 )
+from app.schemas.base_schema import BaseQueryPaginationRequest
 
 
 router = APIRouter(prefix="/role-permissions", tags=["Role Permissions"])
@@ -48,18 +49,9 @@ async def create_role_permission_api(
 )
 async def get_role_permissions_api(
     db: AsyncSession = Depends(get_db),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1, le=100),
-    search: str | None = Query(None, title="Search", description="Search by role_id or permission_id"),
-    active: bool | None = Query(True),
+    pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    role_permissions = await get_role_permissions(
-        db=db,
-        page=page,
-        page_size=page_size,
-        search=search,
-        active=active,
-    )
+    role_permissions = await get_role_permissions(db=db, pagination=pagination)
     return success_response(
         data=role_permissions,
         message="Thành công",
