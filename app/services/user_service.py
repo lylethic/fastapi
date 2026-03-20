@@ -270,3 +270,77 @@ async def get_user_detail(db: AsyncSession, user_id: str ):
     user["permissions"] = user.get("permissions") or []
 
     return user
+
+
+# Get permissions and roles for user
+QUERY_ROLES_PERMISSIONS = """
+SELECT
+    COALESCE(r.roles, JSON_ARRAY()) AS roles,
+    COALESCE(p.permissions, JSON_ARRAY()) AS permissions
+FROM users u
+LEFT JOIN (
+    SELECT
+        t.user_id,
+        JSON_ARRAYAGG(t.role_name) AS roles
+    FROM (
+        SELECT DISTINCT
+            ur.user_id,
+            r.name AS role_name
+        FROM user_roles ur
+        JOIN roles r ON r.id = ur.role_id
+        WHERE ur.active = 1
+          AND ur.deleted = 0
+          AND r.active = 1
+          AND r.deleted = 0
+    ) t
+    GROUP BY t.user_id
+) r ON r.user_id = u.id
+LEFT JOIN (
+    SELECT
+        t.user_id,
+        JSON_ARRAYAGG(t.permission_name) AS permissions
+    FROM (
+        SELECT DISTINCT
+            ur.user_id,
+            p.name AS permission_name
+        FROM user_roles ur
+        JOIN roles r ON r.id = ur.role_id
+        JOIN role_permissions rp ON rp.role_id = r.id
+        JOIN permissions p ON p.id = rp.permission_id
+        WHERE ur.active = 1
+          AND ur.deleted = 0
+          AND r.active = 1
+          AND r.deleted = 0
+          AND rp.active = 1
+          AND rp.deleted = 0
+          AND p.active = 1
+          AND p.deleted = 0
+    ) t
+    GROUP BY t.user_id
+) p ON p.user_id = u.id
+WHERE u.id = :user_id
+  AND u.active = 1
+  AND u.deleted = 0
+"""
+async def get_role_permission(db: AsyncSession, user_id: str):
+    result = await db.execute(
+        text(QUERY_ROLES_PERMISSIONS),
+        {"user_id": user_id}
+    )
+    row = result.mappings().first()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Key - value
+    user = dict(row)
+
+    if isinstance(user["roles"], str):
+        user["roles"] = json.loads(user["roles"])
+    if isinstance(user["permissions"], str):
+        user["permissions"] = json.loads(user["permissions"])
+
+    user["roles"] = user.get("roles") or []
+    user["permissions"] = user.get("permissions") or []
+
+    return user

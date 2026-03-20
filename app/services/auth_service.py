@@ -1,23 +1,24 @@
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPBearer
+from app.schemas.user import LoginRequest, AuthResponse
 from app.services.user_service import get_user_by_email
-from jose import jwt, JWTError
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import ALGORITHM, JWT_SECRET_KEY
-from app.db.session import get_db
-from app.schemas.user import LoginRequest, Token, UserPublic
 from app.utils import create_access_token, verify_password
+
+from app.services.user_service import get_role_permission
 
 security = HTTPBearer()
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")  # token comes from /login
 
-async def authenticate_user(db: AsyncSession, body: LoginRequest) -> Optional[Token]:
+async def authenticate_user(db: AsyncSession, body: LoginRequest) -> Optional[AuthResponse]:
     user = await get_user_by_email(db, body.email)
     if not user or not verify_password(body.password, user.password):
         return None
+    
+    permissions = await get_role_permission(db, user.id)
 
     access_token = create_access_token(
         {
@@ -27,27 +28,7 @@ async def authenticate_user(db: AsyncSession, body: LoginRequest) -> Optional[To
             "sub": user.id,
         }
     )
-    return Token(access_token=access_token)
-
-async def authorize(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-):
-    token = credentials.credentials  # only the JWT string, without "Bearer "
-    try:
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-        )
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-):
-    token = credentials.credentials
-    payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-    return {
-        "id": payload.get("id"),
-        "email": payload.get("email"),
-        "name": payload.get("name"),
-    }
+    return AuthResponse(
+        access_token=access_token, 
+        user=permissions
+    )

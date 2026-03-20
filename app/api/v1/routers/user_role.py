@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.response import ApiResponse, success_response
+from app.constants.permissions import Permission
 from app.db.session import get_db
 from app.schemas.base_schema import BaseQueryPaginationRequest
 from app.schemas.user_role import (
@@ -12,6 +13,7 @@ from app.schemas.user_role import (
     UserRolePagination,
     UserRoleResponse,
 )
+from app.services.assistant_service import require_permissions
 from app.services.user_role_service import (
     create,
     getAll,
@@ -38,7 +40,7 @@ async def create_async(
     return success_response(
         data=UserRoleResponse.model_validate(role),
         message="Thành công",
-        message_en="Role created successfully",
+        messageEn="Role created successfully",
         status_code=status.HTTP_201_CREATED,
     )
 
@@ -64,7 +66,7 @@ async def get_all_async(
     return success_response(
         data=roles,
         message="Thành công",
-        message_en="Roles retrieved successfully",
+        messageEn="Roles retrieved successfully",
     )
 
 
@@ -82,7 +84,7 @@ async def get_by_id_async(
     return success_response(
         data=role,
         message="Thành công",
-        message_en="Role retrieved successfully",
+        messageEn="Role retrieved successfully",
     )
 
 
@@ -100,7 +102,7 @@ async def get_role_by_user_id_async(
     return success_response(
         data=roles,
         message="Thành công",
-        message_en="Roles retrieved successfully",
+        messageEn="Roles retrieved successfully",
     )
 
 
@@ -119,7 +121,7 @@ async def update_async(
     return success_response(
         data=UserRoleResponse.model_validate(role),
         message="Thành công",
-        message_en="Updated successfully",
+        messageEn="Updated successfully",
     )
 
 
@@ -132,10 +134,11 @@ async def delete_async(
     user_id: str,
     role_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_permissions(Permission.DELETE)),
 ):
     result = await delete(db=db, user_id=user_id, role_id=role_id)
     return success_response(
         data=result,
         message="Thành công",
-        message_en="Deleted successfully",
+        messageEn="Deleted successfully",
     )

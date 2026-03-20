@@ -58,6 +58,7 @@ class UserPublic(BaseModel):
     email: str
     name: Optional[str] = None
 
-class Token(BaseModel):
+class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user: Optional[object]

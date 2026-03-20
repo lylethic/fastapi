@@ -163,7 +163,7 @@ All endpoints can use a shared response format like this:
   "statusCode": 200,
   "data": {},
   "message": "Success",
-  "message_en": "Success"
+  "messageEn": "Success"
 }
 ```
 

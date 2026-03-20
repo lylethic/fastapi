@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status, HTTPException
-from app.services.auth_service import get_current_user
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.response import ApiResponse, success_response
+from app.constants.permissions import Permission
 from app.db.session import get_db
 from app.schemas.user import (
     UserCreateBody,
@@ -11,6 +11,7 @@ from app.schemas.user import (
     UserResponse,
     UserUpdateBody
 )
+from app.services.assistant_service import get_current_user, require_permissions
 from app.services.user_service import (
    create_user,
    get_user,
@@ -45,7 +46,7 @@ async def get_user_api(
     return success_response(
         data=data,
         message="Thành công",
-        message_en="Users retrieved successfully",
+        messageEn="Users retrieved successfully",
     )
 
 
@@ -62,7 +63,7 @@ async def get_my_detail(
     return success_response(
         data=UserPermissionRoleResponse.model_validate(data),
         message="Thành công",
-        message_en="User retrieved successfully",
+        messageEn="User retrieved successfully",
     )
 
 @router.get("/{id}", summary="Get user by id")
@@ -74,12 +75,12 @@ async def get_user_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
             status_code=404,
             data=None,
             message="Không tìm thấy user",
-            message_en="User not found",
+            messageEn="User not found",
         )
     return success_response(
         data=UserResponse.model_validate(data),
         message="Thành công",
-        message_en="User retrieved successfully",
+        messageEn="User retrieved successfully",
     )
 
 @router.post(
@@ -93,7 +94,7 @@ async def create_user_api(payload: UserCreateBody, db: AsyncSession = Depends(ge
     return success_response(
         data=UserResponse.model_validate(user),
         message="Thành công",
-        message_en="User created successfully",
+        messageEn="User created successfully",
         status_code=status.HTTP_200_OK,
     )
 
@@ -103,16 +104,20 @@ async def update(id: str, payload: UserUpdateBody, db: AsyncSession = Depends(ge
     return success_response(
         data=UserResponse.model_validate(data),
         message="Thành công",
-        message_en="User updated successfully",
+        messageEn="User updated successfully",
     )
 
 @router.delete("/{id}", summary="Delete user")
-async def delete(id: str, db: AsyncSession = Depends(get_db)):
+async def delete(
+    id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_permissions(Permission.DELETE)),
+):
     data = await delete_user(db=db, id=id)
     return success_response(
         data=UserResponse.model_validate(data),
         message="Thành công",
-        message_en="User deleted successfully",
+        messageEn="User deleted successfully",
     )
 
 @router.post(
@@ -129,11 +134,11 @@ async def upload_image(id: str, file: UploadFile = File(...), db: AsyncSession =
         status_code=400,
         data=UserResponse.model_validate(data),
         message="Thành công",
-        message_en="User image uploaded successfully",
+        messageEn="User image uploaded successfully",
     )
     return success_response(
         data=UserResponse.model_validate(data),
         message="Thành công",
-        message_en="User image uploaded successfully",
+        messageEn="User image uploaded successfully",
     )
 

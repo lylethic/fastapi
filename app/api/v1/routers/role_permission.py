@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.response import ApiResponse, success_response
+from app.constants.permissions import Permission
 from app.db.session import get_db
 from app.schemas.rolepermission import (
     RolePermissionCreateBody,
@@ -9,6 +10,7 @@ from app.schemas.rolepermission import (
     RolePermissionResponse,
     RolePermissionUpdateBody,
 )
+from app.services.assistant_service import require_permissions
 from app.services.role_permission_service import (
     create_role_permission,
     delete_role_permission,
@@ -34,7 +36,7 @@ async def create_role_permission_api(
     return success_response(
         data=RolePermissionResponse.model_validate(role_permission),
         message="Thành công",
-        message_en="Role permission created successfully",
+        messageEn="Role permission created successfully",
         status_code=status.HTTP_201_CREATED,
     )
 
@@ -61,7 +63,7 @@ async def get_role_permissions_api(
     return success_response(
         data=role_permissions,
         message="Thành công",
-        message_en="Role permissions retrieved successfully",
+        messageEn="Role permissions retrieved successfully",
     )
 
 
@@ -82,12 +84,12 @@ async def get_role_permission_by_id_api(
             status_code=404,
             data=None,
             message="Không tìm thấy role permission",
-            message_en="Role permission not found",
+            messageEn="Role permission not found",
         )
     return success_response(
         data=RolePermissionResponse.model_validate(role_permission),
         message="Thành công",
-        message_en="Role permission retrieved successfully",
+        messageEn="Role permission retrieved successfully",
     )
 
 
@@ -111,7 +113,7 @@ async def update_role_permission_api(
     return success_response(
         data=RolePermissionResponse.model_validate(role_permission),
         message="Thành công",
-        message_en="Role permission updated successfully",
+        messageEn="Role permission updated successfully",
     )
 
 
@@ -121,7 +123,10 @@ async def update_role_permission_api(
     summary="Delete role permission",
 )
 async def delete_role_permission_api(
-    role_id: str, permission_id: str, db: AsyncSession = Depends(get_db)
+    role_id: str,
+    permission_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_permissions(Permission.DELETE)),
 ):
     role_permission = await delete_role_permission(
         db=db,
@@ -131,5 +136,5 @@ async def delete_role_permission_api(
     return success_response(
         data=RolePermissionResponse.model_validate(role_permission),
         message="Thành công",
-        message_en="Role permission deleted successfully",
+        messageEn="Role permission deleted successfully",
     )

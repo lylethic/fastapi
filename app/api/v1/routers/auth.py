@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.response import ApiResponse, success_response
 from app.db.session import get_db
-from app.schemas.user import LoginRequest, Token
+from app.schemas.user import LoginRequest, AuthResponse
 from app.services.auth_service import (
     authenticate_user
 )
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.post(
     "/login",
-    response_model=ApiResponse[Token],
+    response_model=ApiResponse[AuthResponse],
     status_code=status.HTTP_200_OK,
     summary="Login"
 )
@@ -27,6 +27,6 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     return success_response(
         data=result,
         message="Thành công",
-        message_en="Login successfully",
+        messageEn="Login successfully",
         status_code=status.HTTP_200_OK,
     )

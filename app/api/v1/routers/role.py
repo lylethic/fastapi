@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.response import ApiResponse, success_response
+from app.constants.permissions import Permission
 from app.db.session import get_db
 from app.schemas.role import RolePagination, RoleResponse, RoleCreateBody, RoleUpdateBody
+from app.services.assistant_service import require_permissions
 from app.services.role_service import (
    create_role, 
    get_role,
@@ -25,7 +27,7 @@ async def create_role_api(payload: RoleCreateBody, db: AsyncSession = Depends(ge
     return success_response(
         data=RoleResponse.model_validate(role),
         message="Thành công",
-        message_en="Role created successfully",
+        messageEn="Role created successfully",
         status_code=status.HTTP_200_OK,
     )
 
@@ -52,7 +54,7 @@ async def get_role_api(
     return success_response(
         data=roles,
         message="Thành công",
-        message_en="Roles retrieved successfully",
+        messageEn="Roles retrieved successfully",
     )
 
 
@@ -65,12 +67,12 @@ async def get_role_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
             status_code=404,
             data=None,
             message="Không tìm thấy role",
-            message_en="Role not found",
+            messageEn="Role not found",
         )
     return success_response(
         data=RoleResponse.model_validate(role),
         message="Thành công",
-        message_en="Role retrieved successfully",
+        messageEn="Role retrieved successfully",
     )
 
 
@@ -80,14 +82,18 @@ async def update(id: str, payload: RoleUpdateBody, db: AsyncSession = Depends(ge
     return success_response(
         data=RoleResponse.model_validate(role),
         message="Thành công",
-        message_en="Role updated successfully",
+        messageEn="Role updated successfully",
     )
 
 @router.delete("/{id}", summary="Delete role")
-async def delete(id: str, db: AsyncSession = Depends(get_db)):
+async def delete(
+    id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_permissions(Permission.SYS_ADMIN, Permission.DELETE)),
+):
     role = await delete_role(db=db, id=id)
     return success_response(
         data=RoleResponse.model_validate(role),
         message="Thành công",
-        message_en="Role deleted successfully",
+        messageEn="Role deleted successfully",
     )

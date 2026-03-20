@@ -10,12 +10,16 @@ from fastapi.staticfiles import StaticFiles
 from app.api.v1.router import api_router
 from app.config import APP_HOST, APP_PORT, UPLOAD_DIR
 from app.db.session import engine, init_models
+from app.middlewares.auth import AuthMiddleware
+from app.middlewares.global_logging import GlobalLoggingMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 logger = logging.getLogger("app.main")
+sqlalchemy_logger = logging.getLogger("sqlalchemy.engine")
+sqlalchemy_logger.setLevel(logging.INFO)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
@@ -42,24 +46,28 @@ app = FastAPI(
     }
 )
 
+# Middlewares
+app.add_middleware(AuthMiddleware)
+app.add_middleware(GlobalLoggingMiddleware)
+
 # Export StaticFile
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 ## Defines all routers
 app.include_router(api_router)
 
-
+# Nomarlize handling global exception (response json)
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     logger.warning("HTTP error on %s %s: %s", request.method, request.url.path, exc.detail)
     return JSONResponse(
-        status_code=exc.status_code,
+        status_code=200,
         content={
             "isSuccess": False,
             "statusCode": exc.status_code,
             "data": None,
             "message": str(exc.detail),
-            "message_en": str(exc.detail),
+            "messageEn": str(exc.detail),
         },
     )
 
@@ -68,16 +76,16 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 async def unhandled_exception_handler(request: Request, exc: Exception):
     logger.exception("Unhandled error on %s %s", request.method, request.url.path)
     return JSONResponse(
-        status_code=500,
+        status_code=200,
         content={
             "isSuccess": False,
             "statusCode": 500,
             "data": None,
             "message": "Loi he thong",
-            "message_en": "Internal server error",
+            "messageEn": "Internal server error",
         },
     )
-
+#
 
 if __name__ == "__main__":
     import uvicorn
