@@ -13,7 +13,7 @@ Windows:
 ```bash
 .venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m app.main
 ```
 
 Linux/macOS:
@@ -21,13 +21,40 @@ Linux/macOS:
 ```bash
 source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m app.main
+```
+
+You can also keep app settings in a project-level `.env` file:
+
+```env
+APP_HOST=127.0.0.1
+APP_PORT=8000
+UPLOAD_DIR=uploads
+JWT_SECRET_KEY=change-me
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+ALGORITHM=HS256
 ```
 
 Swagger UI:
 
 ```text
 http://127.0.0.1:8000/docs
+```
+
+Run with a custom host/port:
+
+Windows:
+
+```bash
+set APP_HOST=0.0.0.0
+set APP_PORT=9000
+python -m app.main
+```
+
+Linux/macOS:
+
+```bash
+APP_HOST=0.0.0.0 APP_PORT=9000 python -m app.main
 ```
 
 Base API prefix:
@@ -136,7 +163,7 @@ All endpoints can use a shared response format like this:
   "statusCode": 200,
   "data": {},
   "message": "Success",
-  "message_en": "Success"
+  "messageEn": "Success"
 }
 ```
 

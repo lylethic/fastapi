@@ -11,13 +11,13 @@ class ApiResponse(BaseModel, Generic[T]):
     statusCode: int
     data: T
     message: str
-    message_en: str
+    messageEn: str
 
 
 def success_response(
     data: T,
     message: str = "Thanh cong",
-    message_en: str = "Success",
+    messageEn: str = "Success",
     status_code: int = 200,
     isSuccess: bool = True,
 ) -> ApiResponse[T]:
@@ -26,5 +26,5 @@ def success_response(
         statusCode=status_code,
         data=data,
         message=message,
-        message_en=message_en,
+        messageEn=messageEn,
     )

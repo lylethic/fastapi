@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from fastapi import HTTPException
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +24,7 @@ async def create_role(db: AsyncSession, body: RoleCreateBody) -> Roles:
 
     role = Roles(
         id=str(uuid4()),
-        name=body.name,
+        name=body.name.upper(),
         description=body.description,
     )
     db.add(role)
@@ -46,7 +46,7 @@ async def get_role(
     search: str | None = None,
     active: bool | None = True,
 ) -> RolePagination:
-    filters = []
+    filters = [Roles.deleted == False]
 
     if search:
         filters.append(
@@ -93,17 +93,17 @@ async def get_role(
 
 ## Get by id
 async def get_role_by_id(db: AsyncSession, id: str) -> Roles:
-    result = await db.execute(select(Roles).where(Roles.id == id))
+    result = await db.execute(select(Roles).where(and_(Roles.id == id, Roles.deleted == False)))
     return result.scalar_one_or_none()
 
 ## Update
 async def update_role(db: AsyncSession, id: str, body: RoleUpdateBody) -> Roles:
-    result = await db.execute(select(Roles).where(Roles.id == id))
+    result = await db.execute(select(Roles).where(Roles.id == id, Roles.deleted == False))
     role = result.scalar_one_or_none()
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     if body.name is not None:
-        role.name = body.name
+        role.name = body.name.upper()
     if body.description is not None:
         role.description = body.description
     if body.active is not None:
@@ -117,15 +117,16 @@ async def update_role(db: AsyncSession, id: str, body: RoleUpdateBody) -> Roles:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Role already exists")
 
-## Delete
+## Soft Delete
 async def delete_role(db: AsyncSession, id: str) -> Roles:
-    result = await db.execute(select(Roles).where(Roles.id == id))
+    result = await db.execute(select(Roles).where(Roles.id == id, Roles.deleted == False))
     data = result.scalar_one_or_none()
 
     if not data:
         raise HTTPException(status_code=404, detail="Role not found")
-
-    await db.delete(data)
+    data.active = False
+    data.deleted = True
     await db.commit()
+    await db.refresh(data)
     return data
 

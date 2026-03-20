@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from fastapi import HTTPException
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -46,7 +46,7 @@ async def get_permission(
     search: str | None = None,
     active: bool | None = 1
 ) -> PermissionPagination:
-    filters = []
+    filters = [Permissions.deleted == False]
 
     if search:
         filters.append(
@@ -93,12 +93,12 @@ async def get_permission(
 
 ## Get by id
 async def get_permission_by_id(db: AsyncSession, id: str) -> Permissions:
-    result = await db.execute(select(Permissions).where(Permissions.id == id))
+    result = await db.execute(select(Permissions).where(and_(Permissions.id == id, Permissions.deleted == False)))
     return result.scalar_one_or_none()
 
 ## Update
 async def update_permission(db: AsyncSession, id: str, body: PermissionUpdateBody) -> Permissions:
-    result = await db.execute(select(Permissions).where(Permissions.id == id))
+    result = await db.execute(select(Permissions).where(and_(Permissions.id == id, Permissions.deleted == False)))
     permission = result.scalar_one_or_none()
     if not permission:
         raise HTTPException(status_code=404, detail="Permission not found")
@@ -110,17 +110,23 @@ async def update_permission(db: AsyncSession, id: str, body: PermissionUpdateBod
     if body.active is not None:
         permission.active = body.active
 
-    await db.commit()
-    await db.refresh(permission)
-    return permission
+    try:
+        await db.commit()
+        await db.refresh(permission)
+        return permission
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Permission already exists")
 
 ## Delete
 async def delete_permission(db: AsyncSession, id: str) -> Permissions:
-    result = await db.execute(select(Permissions).where(Permissions.id == id))
+    result = await db.execute(select(Permissions).where(and_(Permissions.id == id, Permissions.deleted == False)))
     permission = result.scalar_one_or_none()
     if not permission:
         raise HTTPException(status_code=404, detail="Permission not found")
 
-    await db.delete(permission)
+    permission.active = False
+    permission.deleted = True
     await db.commit()
+    await db.refresh(permission)
     return permission

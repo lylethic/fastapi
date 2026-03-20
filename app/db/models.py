@@ -54,7 +54,7 @@ class Users(Base):
 
     id: Mapped[str] = mapped_column(CHAR(36, "utf8mb4_unicode_ci"), primary_key=True)
     email: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"), nullable=False)
-    password: Mapped[str] = mapped_column(String(255, "utf8mb4_unicode_ci"), nullable=False)
+    password: Mapped[str] = mapped_column(String(500, "utf8mb4_unicode_ci"), nullable=False)
     created: Mapped[datetime.datetime] = mapped_column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )

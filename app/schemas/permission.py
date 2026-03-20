@@ -10,7 +10,7 @@ class PermissionCreateBody(BaseModel):
     description: Optional[str] = None
 
 class PermissionUpdateBody(BaseModel):
-    name: str
+    name: Optional[str] = None
     description: Optional[str] = None
     active: Optional[bool] = 1
 

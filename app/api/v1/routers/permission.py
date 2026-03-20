@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.response import ApiResponse, success_response
+from app.constants.permissions import Permission
 from app.db.session import get_db
 from app.schemas.permission import (
     PermissionCreateBody,
@@ -9,6 +10,7 @@ from app.schemas.permission import (
     PermissionResponse,
     PermissionUpdateBody,
 )
+from app.services.assistant_service import require_permissions
 from app.services.permission_service import (
     create_permission,
     delete_permission,
@@ -30,7 +32,7 @@ async def create_permission_api(payload: PermissionCreateBody, db: AsyncSession 
     return success_response(
         data=PermissionResponse.model_validate(permission),
         message="Thành công",
-        message_en="Permission created successfully",
+        messageEn="Permission created successfully",
         status_code=status.HTTP_200_OK,
     )
 
@@ -57,7 +59,7 @@ async def get_permission_api(
     return success_response(
         data=permissions,
         message="Thành công",
-        message_en="Permissions retrieved successfully",
+        messageEn="Permissions retrieved successfully",
     )
 
 
@@ -70,12 +72,12 @@ async def get_permission_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
             status_code=404,
             data=None,
             message="Không tìm thấy permission",
-            message_en="Permission not found",
+            messageEn="Permission not found",
         )
     return success_response(
         data=PermissionResponse.model_validate(permission),
         message="Thành công",
-        message_en="Permission retrieved successfully",
+        messageEn="Permission retrieved successfully",
     )
 
 
@@ -85,14 +87,18 @@ async def update(id: str, payload: PermissionUpdateBody, db: AsyncSession = Depe
     return success_response(
         data=PermissionResponse.model_validate(permission),
         message="Thành công",
-        message_en="Permission updated successfully",
+        messageEn="Permission updated successfully",
     )
 
 @router.delete("/{id}", summary="Delete permission")
-async def delete(id: str, db: AsyncSession = Depends(get_db)):
+async def delete(
+    id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(require_permissions(Permission.DELETE)),
+):
     permission = await delete_permission(db=db, id=id)
     return success_response(
         data=PermissionResponse.model_validate(permission),
         message="Thành công",
-        message_en="Permission deleted successfully",
+        messageEn="Permission deleted successfully",
     )
