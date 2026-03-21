@@ -7,7 +7,7 @@ from datetime import datetime
 
 from fastapi import Depends, File, HTTPException, UploadFile
 
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import func, or_, select, text, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import UPLOAD_DIR
@@ -17,10 +17,11 @@ from app.utils import hash_password
 from app.schemas.base_schema import BaseQueryPaginationRequest
 
 from app.services.user_role_service import create as create_user_role
-from app.services.role_service import get_role_by_id
+from app.services.role_service import get_role_by_id, get_role_by_name
 
 from app.schemas.user import (
     UserCreateBody,
+    UserRegisterBody,
     UserUpdateBody,
     UserResponse,
     UserPagination,
@@ -35,9 +36,7 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
 # create
-async def create_user(
-    db: AsyncSession, body: UserCreateBody, current_user: str | None = None
-) -> Users:
+async def create_user(db: AsyncSession, body: UserCreateBody) -> Users:
     email_result = await db.execute(select(Users).where(Users.email == body.email))
     existing_email = email_result.scalar_one_or_none()
     if existing_email:
@@ -54,24 +53,21 @@ async def create_user(
     if getRole is None:
         raise HTTPException(status_code=400, detail="Role not found")
 
-    user = Users(
-        id=str(uuid4()),
-        username=body.username,
-        email=body.email,
-        password=hash_password(body.password),
-        name=body.name,
-        profile_pic=body.profile_pic,
-        city=body.city,
-    )
-
-    user.created = datetime.utcnow()
-    if current_user is not None:
-        user.created_by = current_user
-
-    # Add new user
-    db.add(user)
-
     try:
+        hashed_password = hash_password(body.password)
+        # Create new user
+        user = Users(
+            id=str(uuid4()),
+            username=body.username,
+            email=body.email,
+            password=hashed_password,
+            name=body.name,
+            profile_pic=body.profile_pic,
+            city=body.city,
+        )
+        # Add new user
+        db.add(user)
+
         # Assign role to user
         await create_user_role(
             db,
@@ -81,6 +77,63 @@ async def create_user(
         await db.commit()
         await db.refresh(user)
         return user
+    except HTTPException:
+        await db.rollback()
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# Register new user
+async def register_user(db: AsyncSession, body: UserRegisterBody) -> Users:
+    email_result = await db.execute(
+        select(Users).where(and_(Users.email == body.email, Users.deleted == False))
+    )
+    existing_email = email_result.scalar_one_or_none()
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Email already exists")
+
+    username_result = await db.execute(
+        select(Users).where(
+            and_(Users.username == body.username, Users.deleted == False)
+        )
+    )
+    existing_username = username_result.scalar_one_or_none()
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    getRoleName = await get_role_by_name(db, "CUSTOMER")
+    if getRoleName is None:
+        raise HTTPException(status_code=400, detail="Role not found")
+
+    try:
+        hashed_password = hash_password(body.password)
+        # Create new user
+        user = Users(
+            id=str(uuid4()),
+            username=body.username,
+            email=body.email,
+            password=hashed_password,
+            name=body.name,
+            profile_pic=body.profile_pic,
+            city=body.city,
+        )
+        # Add new user
+        db.add(user)
+
+        # Assign role to user
+        await create_user_role(
+            db,
+            UserRoleCreateBody(user_id=user.id, role_id=getRoleName.id),
+        )
+
+        await db.commit()
+        await db.refresh(user)
+        return user
+    except HTTPException:
+        await db.rollback()
+        raise
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))

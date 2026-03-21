@@ -42,7 +42,7 @@ async def create_role_api(
     return success_response(
         data=RoleResponse.model_validate(role),
         message="Thành công",
-        messageEn="Role created successfully",
+        message_en="Role created successfully",
         status_code=status.HTTP_200_OK,
     )
 
@@ -60,7 +60,7 @@ async def get_role_api(
     return success_response(
         data=roles,
         message="Thành công",
-        messageEn="Roles retrieved successfully",
+        message_en="Roles retrieved successfully",
     )
 
 
@@ -69,16 +69,16 @@ async def get_role_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
     role = await get_role_by_id(db=db, id=id)
     if not role:
         return success_response(
-            isSuccess=False,
+            is_success=False,
             status_code=404,
             data=None,
             message="Không tìm thấy role",
-            messageEn="Role not found",
+            message_en="Role not found",
         )
     return success_response(
         data=RoleResponse.model_validate(role),
         message="Thành công",
-        messageEn="Role retrieved successfully",
+        message_en="Role retrieved successfully",
     )
 
 
@@ -98,7 +98,7 @@ async def update(
     return success_response(
         data=RoleResponse.model_validate(role),
         message="Thành công",
-        messageEn="Role updated successfully",
+        message_en="Role updated successfully",
     )
 
 
@@ -114,5 +114,5 @@ async def delete(
     return success_response(
         data=RoleResponse.model_validate(role),
         message="Thành công",
-        messageEn="Role deleted successfully",
+        message_en="Role deleted successfully",
     )

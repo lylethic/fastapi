@@ -103,6 +103,23 @@ async def get_role_by_id(db: AsyncSession, id: str) -> Roles:
     return result.scalar_one_or_none()
 
 
+async def get_role_by_name(db: AsyncSession, name: str) -> Roles:
+    """
+    Retrieve a role by its name.
+
+    Args:
+        db: Async database session.
+        name: Role name to search for.
+
+    Returns:
+        The matching role if found and not deleted, otherwise None.
+    """
+    result = await db.execute(
+        select(Roles).where(and_(Roles.name == name, Roles.deleted == False))
+    )
+    return result.scalar_one_or_none()
+
+
 ## Update
 async def update_role(
     db: AsyncSession, id: str, body: RoleUpdateBody, current_user: str | None = None

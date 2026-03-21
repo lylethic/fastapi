@@ -71,11 +71,11 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=200,
         content={
-            "isSuccess": False,
-            "statusCode": exc.status_code,
+            "is_success": False,
+            "status_code": exc.status_code,
             "data": None,
             "message": str(exc.detail),
-            "messageEn": str(exc.detail),
+            "message_en": str(exc.detail),
         },
     )
 
@@ -86,11 +86,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=200,
         content={
-            "isSuccess": False,
-            "statusCode": 500,
+            "is_success": False,
+            "status_code": 500,
             "data": None,
             "message": "Loi he thong",
-            "messageEn": "Internal server error",
+            "message_en": "Internal server error",
         },
     )
 

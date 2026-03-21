@@ -44,11 +44,11 @@ async def get_user_api(
     db: AsyncSession = Depends(get_db),
     pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    data = await get_user(db=db, pagination=paginiantion)
+    data = await get_user(db=db, pagination=pagination)
     return success_response(
         data=data,
         message="Thành công",
-        messageEn="Users retrieved successfully",
+        message_en="Users retrieved successfully",
     )
 
 
@@ -66,7 +66,7 @@ async def get_my_detail(
     return success_response(
         data=UserPermissionRoleResponse.model_validate(data),
         message="Thành công",
-        messageEn="User retrieved successfully",
+        message_en="User retrieved successfully",
     )
 
 
@@ -81,7 +81,7 @@ async def get_user_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
     return success_response(
         data=UserPermissionRoleResponse.model_validate(data),
         message="Thành công",
-        messageEn="User retrieved successfully",
+        message_en="User retrieved successfully",
     )
 
 
@@ -91,17 +91,13 @@ async def get_user_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
     status_code=status.HTTP_200_OK,
     summary="Create user",
 )
-async def create_user_api(
-    payload: UserCreateBody,
-    db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    user = await create_user(db=db, body=payload, current_user=current_user["id"])
+async def create_user_api(payload: UserCreateBody, db: AsyncSession = Depends(get_db)):
+    user = await create_user(db=db, body=payload)
 
     return success_response(
         data=UserResponse.model_validate(user),
         message="Thành công",
-        messageEn="User created successfully",
+        message_en="User created successfully",
         status_code=status.HTTP_200_OK,
     )
 
@@ -119,7 +115,7 @@ async def update(
     return success_response(
         data=UserResponse.model_validate(data),
         message="Thành công",
-        messageEn="User updated successfully",
+        message_en="User updated successfully",
     )
 
 
@@ -134,7 +130,7 @@ async def delete(
     return success_response(
         data=UserResponse.model_validate(data),
         message="Thành công",
-        messageEn="User deleted successfully",
+        message_en="User deleted successfully",
     )
 
 
@@ -150,14 +146,14 @@ async def upload_image(
 
     if not data:
         return success_response(
-            isSuccess=False,
+            is_success=False,
             status_code=400,
             data=UserResponse.model_validate(data),
             message="Thành công",
-            messageEn="User image uploaded successfully",
+            message_en="User image uploaded successfully",
         )
     return success_response(
         data=UserResponse.model_validate(data),
         message="Thành công",
-        messageEn="User image uploaded successfully",
+        message_en="User image uploaded successfully",
     )

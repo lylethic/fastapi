@@ -44,7 +44,7 @@ async def create_permission_api(
     return success_response(
         data=PermissionResponse.model_validate(permission),
         message="Thành công",
-        messageEn="Permission created successfully",
+        message_en="Permission created successfully",
         status_code=status.HTTP_200_OK,
     )
 
@@ -62,7 +62,7 @@ async def get_permission_api(
     return success_response(
         data=permissions,
         message="Thành công",
-        messageEn="Permissions retrieved successfully",
+        message_en="Permissions retrieved successfully",
     )
 
 
@@ -71,16 +71,16 @@ async def get_permission_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
     permission = await get_permission_by_id(db=db, id=id)
     if not permission:
         return success_response(
-            isSuccess=False,
+            is_success=False,
             status_code=404,
             data=None,
             message="Không tìm thấy permission",
-            messageEn="Permission not found",
+            message_en="Permission not found",
         )
     return success_response(
         data=PermissionResponse.model_validate(permission),
         message="Thành công",
-        messageEn="Permission retrieved successfully",
+        message_en="Permission retrieved successfully",
     )
 
 
@@ -97,7 +97,7 @@ async def update(
     return success_response(
         data=PermissionResponse.model_validate(permission),
         message="Thành công",
-        messageEn="Permission updated successfully",
+        message_en="Permission updated successfully",
     )
 
 
@@ -111,5 +111,5 @@ async def delete(
     return success_response(
         data=PermissionResponse.model_validate(permission),
         message="Thành công",
-        messageEn="Permission deleted successfully",
+        message_en="Permission deleted successfully",
     )

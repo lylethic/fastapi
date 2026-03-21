@@ -51,7 +51,7 @@ async def create_async(
     return success_response(
         data=UserRoleResponse.model_validate(role),
         message="Thành công",
-        messageEn="Role created successfully",
+        message_en="Role created successfully",
         status_code=status.HTTP_201_CREATED,
     )
 
@@ -77,7 +77,7 @@ async def create_async(
 #     return success_response(
 #         data=roles,
 #         message="Thành công",
-#         messageEn="Roles retrieved successfully",
+#         message_en="Roles retrieved successfully",
 #     )
 
 
@@ -96,7 +96,7 @@ async def create_async(
 #     return success_response(
 #         data=role,
 #         message="Thành công",
-#         messageEn="Role retrieved successfully",
+#         message_en="Role retrieved successfully",
 #     )
 
 
@@ -115,7 +115,7 @@ async def create_async(
 #     return success_response(
 #         data=roles,
 #         message="Thành công",
-#         messageEn="Roles retrieved successfully",
+#         message_en="Roles retrieved successfully",
 #     )
 
 
@@ -135,7 +135,7 @@ async def update_async(
     return success_response(
         data=UserRoleResponse.model_validate(role),
         message="Thành công",
-        messageEn="Updated successfully",
+        message_en="Updated successfully",
     )
 
 
@@ -155,5 +155,5 @@ async def delete_async(
     return success_response(
         data=result,
         message="Thành công",
-        messageEn="Deleted successfully",
+        message_en="Deleted successfully",
     )

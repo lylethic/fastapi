@@ -159,11 +159,11 @@ All endpoints can use a shared response format like this:
 
 ```json
 {
-  "isSuccess": true,
-  "statusCode": 200,
+  "is_success": true,
+  "status_code": 200,
   "data": {},
   "message": "Success",
-  "messageEn": "Success"
+  "message_en": "Success"
 }
 ```
 

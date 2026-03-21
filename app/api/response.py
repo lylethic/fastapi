@@ -7,24 +7,24 @@ T = TypeVar("T")
 
 
 class ApiResponse(BaseModel, Generic[T]):
-    isSuccess: bool
-    statusCode: int
+    is_success: bool
+    status_code: int
     data: T
     message: str
-    messageEn: str
+    message_en: str
 
 
 def success_response(
     data: T,
     message: str = "Thanh cong",
-    messageEn: str = "Success",
+    message_en: str = "Success",
     status_code: int = 200,
-    isSuccess: bool = True,
+    is_success: bool = True,
 ) -> ApiResponse[T]:
     return ApiResponse[T](
-        isSuccess=isSuccess,
-        statusCode=status_code,
+        is_success=is_success,
+        status_code=status_code,
         data=data,
         message=message,
-        messageEn=messageEn,
+        message_en=message_en,
     )

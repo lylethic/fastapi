@@ -9,3 +9,4 @@ passlib[bcrypt]
 pyjwt
 python-dotenv
 websockets
+argon2-cffi

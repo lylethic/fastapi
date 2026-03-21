@@ -9,22 +9,13 @@ from passlib.context import CryptContext
 from fastapi import HTTPException
 from app.config import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, JWT_SECRET_KEY
 
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 PBKDF2_ITERATIONS = 600000
 
+
 def hash_password(password: str) -> str:
-    try:
-        salt = secrets.token_hex(16)
-        hashed = hashlib.pbkdf2_hmac(
-            "sha256",
-            password.encode("utf-8"),
-            salt.encode("utf-8"),
-            PBKDF2_ITERATIONS,
-        ).hex()
-        return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${salt}${hashed}"
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail="Password hashing failed") from exc
+    return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -40,8 +31,16 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
     return pwd_context.verify(plain_password, hashed_password)
 
-def create_access_token(data: dict, expires_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES) -> str:
+
+def password_needs_rehash(hashed_password: str) -> bool:
+    return hashed_password.startswith("pbkdf2_sha256$")
+
+
+def create_access_token(
+    data: dict, expires_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES
+) -> str:
+    now = datetime.now(timezone.utc)
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
-    to_encode.update({"exp": expire})
+    expire = now + timedelta(minutes=expires_minutes)
+    to_encode.update({"iat": now, "exp": expire})
     return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)

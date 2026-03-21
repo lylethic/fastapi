@@ -15,6 +15,15 @@ class UserCreateBody(BaseModel):
     role_id: str
 
 
+class UserRegisterBody(BaseModel):
+    username: str
+    email: str
+    password: str
+    name: str
+    profile_pic: Optional[str] = None
+    city: Optional[str] = None
+
+
 class UserUpdateBody(BaseModel):
     username: Optional[str] = None
     email: Optional[str] = None
@@ -68,6 +77,5 @@ class UserPublic(BaseModel):
 
 class AuthResponse(BaseModel):
     access_token: str
-    token_type: str = "bearer"
     expires_at: Optional[datetime] = None
     user: Optional[object]

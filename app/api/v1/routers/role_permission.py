@@ -37,7 +37,7 @@ async def create_role_permission_api(
     return success_response(
         data=RolePermissionResponse.model_validate(role_permission),
         message="Thành công",
-        messageEn="Role permission created successfully",
+        message_en="Role permission created successfully",
         status_code=status.HTTP_201_CREATED,
     )
 
@@ -55,7 +55,7 @@ async def get_role_permissions_api(
     return success_response(
         data=role_permissions,
         message="Thành công",
-        messageEn="Role permissions retrieved successfully",
+        message_en="Role permissions retrieved successfully",
     )
 
 
@@ -72,16 +72,16 @@ async def get_role_permission_by_id_api(
     )
     if not role_permission:
         return success_response(
-            isSuccess=False,
+            is_success=False,
             status_code=404,
             data=None,
             message="Không tìm thấy role permission",
-            messageEn="Role permission not found",
+            message_en="Role permission not found",
         )
     return success_response(
         data=RolePermissionResponse.model_validate(role_permission),
         message="Thành công",
-        messageEn="Role permission retrieved successfully",
+        message_en="Role permission retrieved successfully",
     )
 
 
@@ -105,7 +105,7 @@ async def update_role_permission_api(
     return success_response(
         data=RolePermissionResponse.model_validate(role_permission),
         message="Thành công",
-        messageEn="Role permission updated successfully",
+        message_en="Role permission updated successfully",
     )
 
 
@@ -128,5 +128,5 @@ async def delete_role_permission_api(
     return success_response(
         data=RolePermissionResponse.model_validate(role_permission),
         message="Thành công",
-        messageEn="Role permission deleted successfully",
+        message_en="Role permission deleted successfully",
     )
