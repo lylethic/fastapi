@@ -51,6 +51,7 @@ class UserPermissionRoleResponse(BaseModel):
     """
 
     id: str
+    guid: str
     name: str
     email: str
     username: str

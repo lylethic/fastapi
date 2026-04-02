@@ -10,3 +10,5 @@ pyjwt
 python-dotenv
 websockets
 argon2-cffi
+redis
+fastapi-limiter

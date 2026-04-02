@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realtime Chat Tester</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/chat-test.css">
+</head>
+<body>
+  <div class="page-shell">
+    <aside class="panel control-panel">
+      <div class="panel-header">
+        <p class="eyebrow">FastAPI</p>
+        <h1>Realtime Chat Tester</h1>
+        <p class="muted">Đăng nhập, mở websocket và kiểm thử chat realtime ngay trong browser.</p>
+      </div>
+
+      <section class="section-block">
+        <div class="section-title-row">
+          <h2>Connection</h2>
+          <span id="connectionBadge" class="badge badge-idle">Idle</span>
+        </div>
+
+        <label class="field">
+          <span>Base URL</span>
+          <input id="baseUrl" type="text" placeholder="http://127.0.0.1:8000">
+        </label>
+
+        <label class="field">
+          <span>Email</span>
+          <input id="email" type="email" placeholder="you@example.com">
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input id="password" type="password" placeholder="password">
+        </label>
+
+        <div class="row two-cols">
+          <button id="loginBtn" class="btn btn-primary">Login</button>
+          <button id="loadProfileBtn" class="btn btn-secondary">Load Me</button>
+        </div>
+
+        <label class="field">
+          <span>Access Token</span>
+          <textarea id="token" rows="5" placeholder="JWT token"></textarea>
+        </label>
+
+        <div class="row two-cols">
+          <button id="connectBtn" class="btn btn-primary">Connect WS</button>
+          <button id="disconnectBtn" class="btn btn-secondary">Disconnect</button>
+        </div>
+      </section>
+
+      <section class="section-block compact">
+        <div class="section-title-row">
+          <h2>Current User</h2>
+          <button id="copyUserGuidBtn" class="ghost-btn">Copy GUID</button>
+        </div>
+        <div id="currentUserCard" class="info-card empty">Chưa tải thông tin user.</div>
+      </section>
+
+      <section class="section-block compact">
+        <div class="section-title-row">
+          <h2>Create Direct Chat</h2>
+        </div>
+        <label class="field">
+          <span>Recipient User GUID</span>
+          <input id="recipientGuid" type="text" placeholder="uuid của user còn lại">
+        </label>
+        <button id="createChatBtn" class="btn btn-secondary full">Create Chat</button>
+      </section>
+    </aside>
+
+    <main class="workspace">
+      <section class="panel chats-panel">
+        <div class="section-title-row sticky-row">
+          <div>
+            <p class="eyebrow">HTTP</p>
+            <h2>Chats</h2>
+          </div>
+          <button id="loadChatsBtn" class="btn btn-secondary">Refresh</button>
+        </div>
+        <div id="chatList" class="chat-list empty">Chưa có chat nào được tải.</div>
+      </section>
+
+      <section class="panel messages-panel">
+        <div class="section-title-row sticky-row">
+          <div>
+            <p class="eyebrow">Active Room</p>
+            <h2 id="activeChatTitle">Chưa chọn chat</h2>
+            <p id="activeChatMeta" class="muted">Chọn một chat để xem lịch sử và gửi message.</p>
+          </div>
+          <div class="row actions-inline">
+            <button id="loadMessagesBtn" class="btn btn-secondary">Load Messages</button>
+            <button id="markReadBtn" class="btn btn-secondary">Mark Last Read</button>
+          </div>
+        </div>
+
+        <div id="messages" class="messages empty">Chưa có dữ liệu message.</div>
+
+        <div class="composer">
+          <label class="field">
+            <span>Message</span>
+            <textarea id="messageInput" rows="4" placeholder="Nhập nội dung cần gửi realtime"></textarea>
+          </label>
+          <div class="row two-cols">
+            <button id="typingBtn" class="btn btn-secondary">Send Typing</button>
+            <button id="sendBtn" class="btn btn-primary">Send Message</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel log-panel">
+        <div class="section-title-row sticky-row">
+          <div>
+            <p class="eyebrow">Trace</p>
+            <h2>Event Log</h2>
+          </div>
+          <button id="clearLogBtn" class="btn btn-secondary">Clear</button>
+        </div>
+        <pre id="logOutput" class="log-output"></pre>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/chat-test.js"></script>
+</body>
+</html>

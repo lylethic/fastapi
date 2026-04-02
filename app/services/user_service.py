@@ -58,6 +58,7 @@ async def create_user(db: AsyncSession, body: UserCreateBody) -> Users:
         # Create new user
         user = Users(
             id=str(uuid4()),
+            guid=str(uuid4()),
             username=body.username,
             email=body.email,
             password=hashed_password,
@@ -112,6 +113,7 @@ async def register_user(db: AsyncSession, body: UserRegisterBody) -> Users:
         # Create new user
         user = Users(
             id=str(uuid4()),
+            guid=str(uuid4()),
             username=body.username,
             email=body.email,
             password=hashed_password,
@@ -285,6 +287,7 @@ async def uploadImage(db: AsyncSession, id: str, file: UploadFile = File(...)):
 QUERY_USER_WITH_ROLES_PERMISSIONS = """
 SELECT
     u.id,
+    u.guid,
     u.name,
     u.email,
     u.username,

@@ -11,7 +11,7 @@ from typing import List
 
 from app.api.v1.router import api_router
 from app.config import APP_HOST, APP_PORT, UPLOAD_DIR
-from app.db.session import engine, init_models
+from app.db.session import close_redis, engine, get_redis_client, init_models
 from app.middlewares.auth import AuthMiddleware
 from app.middlewares.global_logging import GlobalLoggingMiddleware
 
@@ -23,6 +23,7 @@ logger = logging.getLogger("app.main")
 sqlalchemy_logger = logging.getLogger("sqlalchemy.engine")
 sqlalchemy_logger.setLevel(logging.INFO)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
 connected_clients: List[WebSocket] = []
 
@@ -30,12 +31,28 @@ connected_clients: List[WebSocket] = []
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # STARTUP
-    await init_models()
+    app.state.redis = None
+
+    try:
+        await init_models()
+    except Exception as exc:
+        logger.warning("Database startup check failed: %s", exc)
+
+    try:
+        app.state.redis = get_redis_client()
+        await app.state.redis.ping()
+    except Exception as exc:
+        logger.warning("Redis startup check failed: %s", exc)
+        app.state.redis = None
+
     logger.info("API is running at http://%s:%s", APP_HOST, APP_PORT)
     logger.info("Swagger docs: http://%s:%s/docs", APP_HOST, APP_PORT)
     yield
 
     # SHUTDOWN
+    if app.state.redis is not None:
+        await app.state.redis.close()
+        await close_redis()
     await engine.dispose()
 
 
@@ -57,9 +74,16 @@ app.add_middleware(GlobalLoggingMiddleware)
 
 # Export StaticFile
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 ## Defines all routers
 app.include_router(api_router)
+
+
+@app.get("/chat-test", response_class=HTMLResponse, include_in_schema=False)
+async def chat_test_page():
+    with open(os.path.join(STATIC_DIR, "chat-test.html"), "r", encoding="utf-8") as file:
+        return HTMLResponse(file.read())
 
 
 # Nomarlize handling global exception (response json)
