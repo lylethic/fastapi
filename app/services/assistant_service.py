@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.services.user_service import get_role_permission
 
-security = HTTPBearer(auto_error=False)
+security = HTTPBearer(
+    scheme_name="JWT Authorization",
+    description="Access token JWT. Example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    bearerFormat="JWT",
+    auto_error=False,
+)
 
 
 async def get_current_user(

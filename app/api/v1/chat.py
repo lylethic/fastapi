@@ -30,7 +30,7 @@ from app.services.chat.chat_service import (
     get_user_direct_chats,
 )
 from app.config import settings
-from app.cache_utils import clear_cache_for_get_direct_chats
+from app.utils.cache_utils import clear_cache_for_get_direct_chats
 from app.db.session import get_db
 from app.dependencies import get_cache, get_cache_setting, get_current_user
 from app.db.models import Chat, Message, Users

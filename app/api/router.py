@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends
 
-from app.api.v1.routers.permission import router as permission_router
-from app.api.v1.routers.role_permission import router as role_permission_router
-from app.api.v1.routers.role import router as role_router
-from app.api.v1.routers.user import router as user_router
-from app.api.v1.routers.user_role import router as user_role_router
-from app.api.v1.routers.auth import router as auth_router
-from app.api.v1.routers.chat import router as chat_router
-from app.api.v1.routers.message import router as message_router
-from app.websocket.router import websocket_router
+from app.api.v1.permission import router as permission_router
+from app.api.v1.role_permission import router as role_permission_router
+from app.api.v1.role import router as role_router
+from app.api.v1.user import router as user_router
+from app.api.v1.user_role import router as user_role_router
+from app.api.v1.auth import router as auth_router
+from app.api.v1.chat import router as chat_router
+from app.api.v1.message import router as message_router
+from app.services.websocket.router import websocket_router
 
 from app.services.assistant_service import authorize
 

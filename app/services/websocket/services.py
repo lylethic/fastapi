@@ -20,7 +20,7 @@ from app.db.models import (
     ReadStatus,
     Users as User,
 )
-from app.websocket.schemas import NewChatCreated
+from app.services.websocket.schemas import NewChatCreated
 
 logger = logging.getLogger(__name__)
 

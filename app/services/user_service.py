@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import UPLOAD_DIR
 from app.db.models import Users
 from app.providers.baseProvider import BaseProvider
-from app.utils import hash_password
+from app.utils.token_utils import hash_password
 
 from app.schemas.base_schema import BaseQueryPaginationRequest
 
@@ -231,9 +231,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> Users:
 async def update_user(
     db: AsyncSession, id: str, body: UserUpdateBody, current_user: str | None = None
 ) -> Users:
-    return await user_service.update(
-        db=db, id=id, body=body, current_user=current_user
-    )
+    return await user_service.update(db=db, id=id, body=body, current_user=current_user)
 
 
 async def delete_user(db: AsyncSession, id: str) -> Users:

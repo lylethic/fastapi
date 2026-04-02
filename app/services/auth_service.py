@@ -1,19 +1,17 @@
 from typing import Optional
 from datetime import datetime, timedelta, timezone
 
-from fastapi.security import HTTPBearer
 from app.schemas.user import LoginRequest, AuthResponse, UserRegisterBody
 from app.services.user_service import get_user_by_email, register_user
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.utils import create_access_token, verify_password
+from app.utils.token_utils import create_access_token, verify_password
 
 from app.services.user_service import get_role_permission
 
 from app.config import ACCESS_TOKEN_EXPIRE_MINUTES
 
-security = HTTPBearer()
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")  # token comes from /login
 
 

@@ -1,4 +1,4 @@
-from app.websocket.exceptions import WebsocketTooManyRequests
+from app.services.websocket.exceptions import WebsocketTooManyRequests
 
 
 async def websocket_callback(ws):
