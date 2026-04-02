@@ -10,6 +10,19 @@ from app.schemas.chat import GetDirectChatSchema, GetMessageSchema
 from app.db.models import Chat, ChatChatType as ChatType, Message, ReadStatus, Users
 
 
+async def _get_message_created_map(
+    db: AsyncSession, message_ids: list[str | None]
+) -> dict[str, datetime]:
+    ids = [message_id for message_id in message_ids if message_id]
+    if not ids:
+        return {}
+
+    result = await db.execute(
+        select(Message.id, Message.created).where(Message.id.in_(ids))
+    )
+    return {message_id: created for message_id, created in result.all()}
+
+
 async def create_direct_chat(
     db: AsyncSession, *, initiator_user: Users, recipient_user: Users
 ) -> Chat:
@@ -29,13 +42,13 @@ async def create_direct_chat(
             id=str(uuid4()),
             chat_id=chat.id,
             user_id=initiator_user.id,
-            last_read_message_id=0,
+            last_read_message_id=None,
         )
         recipient_read_status = ReadStatus(
             id=str(uuid4()),
             chat_id=chat.id,
             user_id=recipient_user.id,
-            last_read_message_id=0,
+            last_read_message_id=None,
         )
         db.add_all([initiator_read_status, recipient_read_status])
         await db.commit()
@@ -206,16 +219,17 @@ async def get_chat_messages(
         else:
             my_last_read_message_id = read_status.last_read_message_id
 
-    # If no value is assigned, you could choose to set a default value
-    # or handle this case accordingly (e.g., using a placeholder)
-    if my_last_read_message_id is None:
-        my_last_read_message_id = 0  # Or some other default value
+    read_created_map = await _get_message_created_map(
+        db, [my_last_read_message_id, other_user_last_read_message_id]
+    )
+    my_last_read_created = read_created_map.get(my_last_read_message_id)
+    other_user_last_read_created = read_created_map.get(other_user_last_read_message_id)
 
-    if other_user_last_read_message_id is None:
-        other_user_last_read_message_id = 0  # Or some other default value
-
-    # Retrieve the last read message for the other user
-    last_read_message = await db.get(Message, other_user_last_read_message_id)
+    last_read_message = (
+        await db.get(Message, other_user_last_read_message_id)
+        if other_user_last_read_message_id
+        else None
+    )
 
     # Construct GetMessageSchema list
     get_message_schemas = [
@@ -225,12 +239,17 @@ async def get_chat_messages(
             created=message.created,
             chat_guid=message.chat.guid,
             user_guid=message.user.guid,
-            is_read=message.id
-            <= (
-                other_user_last_read_message_id
+            is_read=(
+                message.created <= other_user_last_read_created
                 if message.user.id == user_id
-                else my_last_read_message_id
-            ),
+                else message.created <= my_last_read_created
+            )
+            if (
+                other_user_last_read_created is not None
+                if message.user.id == user_id
+                else my_last_read_created is not None
+            )
+            else False,
         )
         for message in messages
     ]
@@ -284,12 +303,20 @@ async def get_older_chat_messages(
     has_more_messages = len(older_messages) > limit
     older_messages = older_messages[:limit]
 
-    # assuming only two read statuses
-    for read_status in chat.read_statuses:
+    my_last_read_message_id = None
+    other_user_last_read_message_id = None
+
+    for read_status in chat.read_status:
         if read_status.user_id != user_id:
             other_user_last_read_message_id = read_status.last_read_message_id
         else:
             my_last_read_message_id = read_status.last_read_message_id
+
+    read_created_map = await _get_message_created_map(
+        db, [my_last_read_message_id, other_user_last_read_message_id]
+    )
+    my_last_read_created = read_created_map.get(my_last_read_message_id)
+    other_user_last_read_created = read_created_map.get(other_user_last_read_message_id)
 
     get_message_schemas = [
         GetMessageSchema(
@@ -298,12 +325,17 @@ async def get_older_chat_messages(
             created=message.created,
             chat_guid=message.chat.guid,
             user_guid=message.user.guid,
-            is_read=message.id
-            <= (
-                other_user_last_read_message_id
+            is_read=(
+                message.created <= other_user_last_read_created
                 if message.user.id == user_id
-                else my_last_read_message_id
-            ),
+                else message.created <= my_last_read_created
+            )
+            if (
+                other_user_last_read_created is not None
+                if message.user.id == user_id
+                else my_last_read_created is not None
+            )
+            else False,
         )
         for message in older_messages
     ]

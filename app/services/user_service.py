@@ -3,8 +3,6 @@ import os
 from uuid import uuid4
 import uuid
 
-from datetime import datetime
-
 from fastapi import Depends, File, HTTPException, UploadFile
 
 from sqlalchemy import func, or_, select, text, and_
@@ -12,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import UPLOAD_DIR
 from app.db.models import Users
+from app.providers.baseProvider import BaseProvider
 from app.utils import hash_password
 
 from app.schemas.base_schema import BaseQueryPaginationRequest
@@ -33,6 +32,76 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
 ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+
+
+class UserService(
+    BaseProvider[
+        Users,
+        UserCreateBody,
+        UserUpdateBody,
+        UserResponse,
+        UserPagination,
+    ]
+):
+    def __init__(self) -> None:
+        super().__init__(
+            model=Users,
+            response_schema=UserResponse,
+            pagination_schema=UserPagination,
+            not_found_message="User not found",
+            already_exists_message="User already exists",
+            search_fields=["username", "email", "name"],
+        )
+
+    def base_filters(self) -> list:
+        return []
+
+    def build_search_filters(self, search: str) -> list:
+        if not search:
+            return []
+        return [
+            or_(
+                Users.username.ilike(f"{search}%"),
+                Users.email.ilike(f"{search}%"),
+                Users.name.ilike(f"{search}%"),
+            )
+        ]
+
+    async def validate_update(
+        self, db: AsyncSession, db_obj: Users, body: UserUpdateBody
+    ) -> None:
+        if body.email is not None:
+            email_result = await db.execute(
+                select(Users).where(
+                    and_(
+                        Users.email == body.email,
+                        Users.id != db_obj.id,
+                    )
+                )
+            )
+            if email_result.scalar_one_or_none():
+                raise HTTPException(status_code=400, detail="Email already exists")
+
+        if body.username is not None:
+            username_result = await db.execute(
+                select(Users).where(
+                    and_(
+                        Users.username == body.username,
+                        Users.id != db_obj.id,
+                    )
+                )
+            )
+            if username_result.scalar_one_or_none():
+                raise HTTPException(status_code=400, detail="Username already exists")
+
+    def map_update_data(self, body: UserUpdateBody) -> dict:
+        data = body.model_dump(exclude_unset=True)
+        if data.get("password"):
+            data["password"] = hash_password(data["password"])
+        return data
+
+
+user_service = UserService()
 
 
 # create
@@ -144,58 +213,11 @@ async def register_user(db: AsyncSession, body: UserRegisterBody) -> Users:
 async def get_user(
     db: AsyncSession, pagination: BaseQueryPaginationRequest
 ) -> UserPagination:
-    filters = []
-
-    if pagination.search:
-        filters.append(
-            or_(
-                Users.username.ilike(f"{pagination.search}%"),
-                Users.email.ilike(f"{pagination.search}%"),
-                Users.name.ilike(f"{pagination.search}%"),
-            )
-        )
-
-    if pagination.active is not None:
-        filters.append(Users.active == pagination.active)
-
-    # Count query
-    count_stmt = select(func.count()).select_from(Users)
-    if filters:
-        count_stmt = count_stmt.where(*filters)
-
-    total_result = await db.execute(count_stmt)
-    total = total_result.scalar_one()
-
-    total_pages = (
-        (total + pagination.page_size - 1) // pagination.page_size if total else 0
-    )
-
-    # Data query
-    stmt = select(Users)
-    if filters:
-        stmt = stmt.where(*filters)
-
-    stmt = (
-        stmt.order_by(Users.created.desc())
-        .offset((pagination.page - 1) * pagination.page_size)
-        .limit(pagination.page_size)
-    )
-
-    result = await db.execute(stmt)
-    users = result.scalars().all()
-
-    return UserPagination(
-        items=[UserResponse.model_validate(user) for user in users],
-        total=total,
-        page=pagination.page,
-        page_size=pagination.page_size,
-        total_pages=total_pages,
-    )
+    return await user_service.get_all(db=db, pagination=pagination)
 
 
 async def get_user_by_id(db: AsyncSession, id: str) -> Users:
-    result = await db.execute(select(Users).where(Users.id == id))
-    return result.scalar_one_or_none()
+    return await user_service.get_by_id(db=db, id=id)
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> Users:
@@ -209,37 +231,9 @@ async def get_user_by_email(db: AsyncSession, email: str) -> Users:
 async def update_user(
     db: AsyncSession, id: str, body: UserUpdateBody, current_user: str | None = None
 ) -> Users:
-    result = await db.execute(select(Users).where(Users.id == id))
-    update = result.scalar_one_or_none()
-    if not update:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if body.username is not None:
-        update.username = body.username
-    if body.email is not None:
-        update.email = body.email
-    if body.password is not None:
-        update.password = hash_password(body.password)
-    if body.name is not None:
-        update.name = body.name
-    if body.profile_pic is not None:
-        update.profile_pic = body.profile_pic
-    if body.city is not None:
-        update.city = body.city
-    if body.active is not None:
-        update.active = body.active
-
-    update.updated = datetime.utcnow()
-    if current_user is not None:
-        update.updated_by = current_user
-
-    try:
-        await db.commit()
-        await db.refresh(update)
-        return update
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+    return await user_service.update(
+        db=db, id=id, body=body, current_user=current_user
+    )
 
 
 async def delete_user(db: AsyncSession, id: str) -> Users:
