@@ -1,161 +1,454 @@
-# FastAPI Project
+# FastAPI Realtime Chat API
 
-## Run The Project
+This project is a FastAPI backend focused on two main areas:
 
-Create and activate a virtual environment, then install dependencies:
+- User, role, and permission management for API access control
+- Realtime direct chat between users via WebSocket and Redis Pub/Sub
 
-```bash
-python -m venv .venv
-```
+The application provides both REST APIs and a WebSocket API, along with a browser-based test page for manual realtime chat testing.
 
-Windows:
+## Project Overview
 
-```bash
-.venv\Scripts\activate
-pip install -r requirements.txt
-python -m app.main
-```
+The system includes the following main modules:
 
-Linux/macOS:
+- `Auth`: user registration and login with JWT
+- `Users`: user management, profile retrieval, and image upload
+- `Roles / Permissions`: role and permission assignment
+- `Chat`: direct chat creation, chat listing, and message history
+- `Messages`: message CRUD over HTTP
+- `WebSocket`: realtime messaging, typing indicators, read status, and new chat synchronization
 
-```bash
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m app.main
-```
+The current realtime chat flow works like this:
 
-You can also keep app settings in a project-level `.env` file:
+1. The client logs in and gets a JWT
+2. The client connects to `/api/v1/ws/?token=...`
+3. The server validates the JWT for the websocket connection
+4. The websocket subscribes to the user’s existing chat rooms
+5. When a new message is sent, the server stores it in the database and publishes it through Redis Pub/Sub
+6. All websockets in the same chat receive the payload and update the UI in realtime
 
-```env
-APP_HOST=127.0.0.1
-APP_PORT=8000
-UPLOAD_DIR=uploads
-JWT_SECRET_KEY=change-me
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-ALGORITHM=HS256
-```
+In addition to Swagger, the project includes a test page at `/chat-test` for login, websocket connection, direct chat creation, and realtime message testing.
 
-Swagger UI:
+## Tech Stack
 
-```text
-http://127.0.0.1:8000/docs
-```
+- `Python`
+- `FastAPI`
+- `Uvicorn`
+- `SQLAlchemy Async`
+- `MySQL`
+- `Redis`
+- `WebSocket`
+- `Pydantic`
+- `JWT`
+- `Docker Compose` for Redis
 
-Run with a custom host/port:
+Declared packages in [requirements.txt](/mnt/d/fastapi-tu/fastapi/requirements.txt):
 
-Windows:
+- `fastapi`
+- `uvicorn`
+- `sqlalchemy`
+- `pymysql`
+- `sqlacodegen`
+- `cryptography`
+- `python-multipart`
+- `passlib[bcrypt]`
+- `pyjwt`
+- `python-dotenv`
+- `websockets`
+- `argon2-cffi`
+- `redis`
+- `fastapi-limiter`
 
-```bash
-set APP_HOST=0.0.0.0
-set APP_PORT=9000
-python -m app.main
-```
+Practical note:
 
-Linux/macOS:
+- The code in [app/db/session.py](/mnt/d/fastapi-tu/fastapi/app/db/session.py) uses the `mysql+asyncmy` driver
+- If your environment does not already have `asyncmy`, install it with `pip install asyncmy`
 
-```bash
-APP_HOST=0.0.0.0 APP_PORT=9000 python -m app.main
-```
+## Main Features
 
-Base API prefix:
-
-```text
-/api/v1
-```
+- JWT-based registration and login
+- HTTP authentication middleware
+- Role- and permission-based access control
+- User, role, permission, role-permission, and user-role management
+- Direct chat creation between two users
+- Chat list and message history retrieval
+- Realtime messaging over websocket
+- Typing indicator over websocket
+- Read receipts over websocket
+- Online/offline/inactive user status synchronization with Redis
+- Partial Redis caching for chat and message data
+- Realtime chat test page at `/chat-test`
 
 ## Project Structure
-
-This project is organized into three main layers:
-
-- `api`: route declarations, versioning, and API response formatting
-- `services`: business logic
-- `db`: database connection and ORM models
-
-Current structure:
 
 ```text
 app/
 ├── api/
-│   ├── v1/
-│   │   ├── __init__.py
-│   │   └── routers/
-│   │       ├── __init__.py
-│   │       └── permission.py
-│   ├── __init__.py
-│   └── response.py
+│   ├── response.py
+│   └── v1/
+│       ├── router.py
+│       └── routers/
+│           ├── auth.py
+│           ├── chat.py
+│           ├── message.py
+│           ├── permission.py
+│           ├── role.py
+│           ├── role_permission.py
+│           ├── user.py
+│           └── user_role.py
+├── cache_utils.py
+├── config.py
+├── constants/
+│   └── permissions.py
+├── create_table.py
 ├── db/
-│   ├── __init__.py
 │   ├── models.py
 │   └── session.py
+├── dependencies.py
+├── main.py
+├── managers/
+│   ├── pubsub_manager.py
+│   └── websocket_manager.py
+├── middlewares/
+│   ├── auth.py
+│   └── global_logging.py
 ├── schemas/
-│   ├── __init__.py
 │   ├── base_schema.py
-│   └── permission.py
+│   ├── chat.py
+│   ├── message.py
+│   ├── permission.py
+│   ├── role.py
+│   ├── rolepermission.py
+│   ├── user.py
+│   └── user_role.py
 ├── services/
-│   ├── __init__.py
-│   └── permission_service.py
-├── __init__.py
-├── create_table.py
-└── main.py
+│   ├── assistant_service.py
+│   ├── auth_service.py
+│   ├── chat/
+│   │   └── chat_service.py
+│   ├── message_service.py
+│   ├── permission_service.py
+│   ├── role_permission_service.py
+│   ├── role_service.py
+│   ├── user_role_service.py
+│   └── user_service.py
+├── static/
+│   ├── chat-test.css
+│   ├── chat-test.html
+│   └── chat-test.js
+├── utils/
+│   └── cache.py
+├── utils.py
+└── websocket/
+    ├── exceptions.py
+    ├── handlers.py
+    ├── rate_limiter.py
+    ├── router.py
+    ├── schemas.py
+    └── services.py
 ```
 
-## Folder Responsibilities
+## Directory Responsibilities
 
 ### `app/main.py`
 
 Application entry point.
 
 - Creates the FastAPI app
-- Registers versioned routers
-- Runs startup and shutdown logic
+- Mounts static files and uploads
+- Registers the `/api/v1` router
+- Initializes DB and Redis connections during startup
+- Exposes the `/chat-test` page
 
-### `app/api/`
+### `app/api/v1/routers`
 
-HTTP layer.
+Defines REST endpoints by domain:
 
-- Defines shared API response models
-- Organizes versioned API modules
+- `auth.py`: register, login
+- `user.py`: user CRUD, profile, image upload
+- `chat.py`: direct chat creation, chat listing, message history
+- `message.py`: message CRUD over HTTP
+- `role.py`, `permission.py`, `role_permission.py`, `user_role.py`: RBAC
 
-### `app/api/v1/`
+### `app/services`
 
-Version 1 of the public API.
+Contains business logic and database operations.
 
-- Registers routers under the `/api/v1` prefix
-- Keeps version-specific API behavior isolated from future versions
+- Keeps router/controller code thin
+- Separates request handling from domain logic
 
-### `app/api/v1/routers/permission.py`
+### `app/db`
 
-Permission endpoints.
+Data access layer.
 
-- Declares `/api/v1/permissions` routes
-- Connects request schemas to service functions
-- Adds Swagger/OpenAPI metadata such as `summary`, `description`, and `tags`
+- `session.py`: async engine, session factory, Redis pool
+- `models.py`: ORM models for users, chats, messages, read status, roles, and permissions
 
-### `app/schemas/`
+### `app/websocket`
 
-Pydantic schemas used for request and response validation.
+Contains the realtime messaging flow.
 
-- `base_schema.py`: shared base schemas such as log fields and pagination
-- `permission.py`: permission request/response schemas
+- `router.py`: websocket endpoint `/api/v1/ws/`
+- `handlers.py`: handlers for message types such as `new_message`, `message_read`, and `user_typing`
+- `services.py`: realtime-related business logic
+- `schemas.py`: websocket payload schemas
+- `rate_limiter.py`: websocket rate limiting
 
-### `app/services/`
+### `app/managers`
 
-Business logic layer.
+Connection management for realtime messaging.
 
-- Handles permission creation, listing, and update logic
-- Manages transaction-related behavior with SQLAlchemy
-- Keeps route handlers thin and focused
+- `websocket_manager.py`: connection, room, and broadcast management
+- `pubsub_manager.py`: Redis publish/subscribe integration
 
-### `app/db/`
+### `app/middlewares`
 
-Database layer.
+- `auth.py`: reads JWT from HTTP headers and attaches user information to request state
+- `global_logging.py`: global request logging
 
-- `session.py`: database URL, engine, session factory, and `get_db()`
-- `models.py`: SQLAlchemy ORM models
+### `app/static`
 
-## Common API Response
+Manual frontend test tools for realtime chat.
 
-All endpoints can use a shared response format like this:
+- login
+- load profile
+- load chats
+- connect websocket
+- send realtime messages
+- send typing events
+- mark messages as read
+
+## High-Level Architecture
+
+```text
+Client
+  ├─ HTTP REST API
+  │   ├─ /api/v1/auth/*
+  │   ├─ /api/v1/users/*
+  │   ├─ /api/v1/chat/*
+  │   └─ /api/v1/messages/*
+  └─ WebSocket
+      └─ /api/v1/ws/
+
+FastAPI App
+  ├─ Routers
+  ├─ Services
+  ├─ SQLAlchemy Async
+  ├─ WebSocket Handlers
+  └─ Redis Pub/Sub
+
+Infrastructure
+  ├─ MySQL
+  └─ Redis
+```
+
+## Environment Requirements
+
+- Python 3.11+ is recommended
+- MySQL
+- Redis
+- Docker and Docker Compose if you want to run Redis in a container
+
+## Installation
+
+### 1. Create a virtual environment
+
+Windows:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+Linux/macOS:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+pip install asyncmy
+```
+
+### 3. Configure `.env`
+
+Create a `.env` file at the project root:
+
+```env
+APP_HOST=127.0.0.1
+APP_PORT=8000
+UPLOAD_DIR=uploads
+
+JWT_SECRET_KEY=change-me
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+ALGORITHM=HS256
+
+MYSQL_USER=root
+MYSQL_PASSWORD=111111
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_DATABASE=fastapi
+
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_PASSWORD=
+REDIS_CACHE_EXPIRATION_SECONDS=300
+CACHE_ENABLED=true
+```
+
+These variables are loaded in [app/config.py](/mnt/d/fastapi-tu/fastapi/app/config.py).
+
+### 4. Run Redis
+
+The project includes [docker-compose.yml](/mnt/d/fastapi-tu/fastapi/docker-compose.yml) for Redis:
+
+```bash
+docker compose up -d redis
+```
+
+### 5. Start the server
+
+```bash
+python -m app.main
+```
+
+Default server address:
+
+```text
+http://127.0.0.1:8000
+```
+
+## Usage
+
+### Swagger
+
+After starting the app:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+### Base API prefix
+
+```text
+/api/v1
+```
+
+### Realtime chat test page
+
+Open:
+
+```text
+http://127.0.0.1:8000/chat-test
+```
+
+Quick test flow:
+
+1. Log in with email and password
+2. Click `Load Me`
+3. Create a direct chat or `Refresh` the chat list
+4. Click `Connect WS`
+5. Select a chat
+6. Send a realtime message
+
+Actual websocket endpoint used for chat:
+
+```text
+ws://127.0.0.1:8000/api/v1/ws/?token=<JWT>
+```
+
+## Representative Endpoints
+
+### Auth
+
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+
+### Users
+
+- `GET /api/v1/users`
+- `GET /api/v1/users/me`
+- `GET /api/v1/users/{id}`
+- `POST /api/v1/users`
+- `PUT /api/v1/users/{id}`
+- `DELETE /api/v1/users/{id}`
+- `POST /api/v1/users/{id}/upload`
+
+### Chat
+
+- `POST /api/v1/chat/direct`
+- `GET /api/v1/chat/chats/direct`
+- `GET /api/v1/chat/{chat_guid}/messages`
+- `GET /api/v1/chat/{chat_guid}/messages/old/{message_guid}`
+- `DELETE /api/v1/chat/chats/direct/{chat_guid}`
+
+### Messages
+
+- `POST /api/v1/messages`
+- `GET /api/v1/messages`
+- `GET /api/v1/messages/chat/{chat_id}`
+- `GET /api/v1/messages/{id}`
+- `PUT /api/v1/messages/{id}`
+- `DELETE /api/v1/messages/{id}`
+
+### WebSocket message types
+
+Sent by the client:
+
+- `new_message`
+- `message_read`
+- `user_typing`
+
+Broadcast by the server:
+
+- `new`
+- `message_read`
+- `user_typing`
+- `new_chat_created`
+- `chat_deleted`
+- `status`
+
+## Example WebSocket Payloads
+
+### Send a new message
+
+```json
+{
+  "type": "new_message",
+  "chat_guid": "6086d625-3b41-428c-ba1b-b381a611f2c3",
+  "user_guid": "f9eaf4f1-d742-4a76-952e-6073757639f0",
+  "content": "Hello"
+}
+```
+
+### Send a typing event
+
+```json
+{
+  "type": "user_typing",
+  "chat_guid": "6086d625-3b41-428c-ba1b-b381a611f2c3",
+  "user_guid": "f9eaf4f1-d742-4a76-952e-6073757639f0"
+}
+```
+
+### Mark the last message as read
+
+```json
+{
+  "type": "message_read",
+  "chat_guid": "6086d625-3b41-428c-ba1b-b381a611f2c3",
+  "message_guid": "96fc0dfb-9b4b-4d1b-b66f-6feb0b7d84ca"
+}
+```
+
+## Common Response Format
+
+HTTP endpoints use a unified response format defined in [app/api/response.py](/mnt/d/fastapi-tu/fastapi/app/api/response.py):
 
 ```json
 {
@@ -167,30 +460,63 @@ All endpoints can use a shared response format like this:
 }
 ```
 
-This format is defined in [app/api/response.py](/mnt/d/fastapi-tu/fastapi/app/api/response.py).
+Notes:
 
-## Versioned Endpoints
+- Some business errors may still return HTTP status `200`, while `is_success` is `false`
+- Global exception handling is configured in [app/main.py](/mnt/d/fastapi-tu/fastapi/app/main.py)
 
-Examples:
+## Authorization Model
 
-- `POST /api/v1/permissions`
-- `GET /api/v1/permissions`
-- `GET /api/v1/permissions/{id}`
-- `PUT /api/v1/permissions/{id}`
+The project uses RBAC:
 
-## Generate ORM Models From MySQL
+- A user can have multiple roles
+- A role can have multiple permissions
+- Some APIs require permissions such as `SYS_ADMIN`, `WRITE`, `EDIT`, and `DELETE`
 
-Generate models into `app/db/models.py`:
+Relevant logic lives in:
+
+- [app/services/assistant_service.py](/mnt/d/fastapi-tu/fastapi/app/services/assistant_service.py)
+- [app/constants/permissions.py](/mnt/d/fastapi-tu/fastapi/app/constants/permissions.py)
+
+## Files and Uploads
+
+- Uploaded files are stored in the `uploads/` directory
+- That directory is exposed through the `/uploads` route
+
+## Redis Usage
+
+Redis is used for:
+
+- Chat and message caching
+- Pub/Sub for websocket broadcasting
+- Online/offline user status tracking
+
+## Suggested Improvements
+
+- Add automated tests for REST APIs and WebSocket flows
+- Split configuration by environment such as `dev`, `staging`, and `prod`
+- Add database migrations with Alembic
+- Add a Dockerfile for the backend service
+- Align `requirements.txt` with the actual runtime dependencies
+
+## Useful Commands
+
+Run the app:
+
+```bash
+python -m app.main
+```
+
+Run Redis:
+
+```bash
+docker compose up -d redis
+```
+
+Regenerate models from MySQL:
 
 ```bash
 sqlacodegen "mysql+pymysql://root:111111@localhost:3306/fastapi" > app/db/models.py
 ```
 
-After generating, update the top of `app/db/models.py` so it uses the shared `Base` from `app.db.session`:
-
-```python
-from app.db.session import Base
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-```
-
-If `sqlacodegen` creates its own `Base`, remove that block so all models use the same metadata object.
+After regenerating models, make sure [app/db/models.py](/mnt/d/fastapi-tu/fastapi/app/db/models.py) still uses the shared project `Base`.
