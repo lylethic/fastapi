@@ -6,7 +6,7 @@ from app.db.models import Users
 
 
 async def clear_cache_for_get_messages(cache: aioredis.Redis, chat_guid: UUID):
-    pattern_for_get_messages = f"messages_{chat_guid}_*"
+    pattern_for_get_messages = f"messages*_{chat_guid}_*"
     keys_found = cache.scan_iter(match=pattern_for_get_messages)
     async for key in keys_found:
         await cache.delete(key)

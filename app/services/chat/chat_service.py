@@ -239,6 +239,9 @@ async def get_chat_messages(
             created=message.created,
             chat_guid=message.chat.guid,
             user_guid=message.user.guid,
+            profile_pic=message.user.profile_pic,
+            name=message.user.name,
+            username=message.user.username,
             is_read=(
                 message.created <= other_user_last_read_created
                 if message.user.id == user_id
@@ -325,6 +328,9 @@ async def get_older_chat_messages(
             created=message.created,
             chat_guid=message.chat.guid,
             user_guid=message.user.guid,
+            profile_pic=message.user.profile_pic,
+            name=message.user.name,
+            username=message.user.username,
             is_read=(
                 message.created <= other_user_last_read_created
                 if message.user.id == user_id

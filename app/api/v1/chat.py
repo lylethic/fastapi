@@ -127,8 +127,8 @@ async def get_user_messages_in_chat(
     # get larger of provided messages size or unread messages
     size: int = max(size, unread_messages_count)
 
-    # determine cache key
-    cache_key: str = f"messages_{chat_guid}_{size}"
+    # Response depends on current user (`is_read`, `last_read_message`) and schema version.
+    cache_key: str = f"messages_v2_{chat_guid}_{current_user['id']}_{size}"
 
     if cache_enabled:
         # return cached chat messages if key exists
