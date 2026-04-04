@@ -9,11 +9,13 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from typing import List
 
-from app.api.v1.router import api_router
+from app.api.router import api_router
 from app.config import APP_HOST, APP_PORT, UPLOAD_DIR
 from app.db.session import close_redis, engine, get_redis_client, init_models
 from app.middlewares.auth import AuthMiddleware
 from app.middlewares.global_logging import GlobalLoggingMiddleware
+
+from app.core.swagger import CustomSwaggerUI
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,17 +58,22 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
 
 
-# Start program
 app = FastAPI(
-    title="Auth API",
+    title="Chat Service API",
     version="1.0.0",
-    description="Auth API",
+    description="Backend for Chat Service API",
     lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
     swagger_ui_parameters={
         "syntaxHighlight": {"theme": "obsidian"},
-        # "docExpansion": "none"
     },
+    servers=[
+        {"url": "http://127.0.0.1:8000", "description": "HTTP local"},
+        {"url": "https://127.0.0.1:8000", "description": "HTTPS local"},
+    ],
 )
+
 
 # Middlewares
 app.add_middleware(AuthMiddleware)
@@ -76,13 +83,19 @@ app.add_middleware(GlobalLoggingMiddleware)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-## Defines all routers
+# Setup Custom swagger
+CustomSwaggerUI(app, title="Chat Service API").setup()
+
+## Define routers
 app.include_router(api_router)
 
 
+# Testing websocket chat
 @app.get("/chat-test", response_class=HTMLResponse, include_in_schema=False)
 async def chat_test_page():
-    with open(os.path.join(STATIC_DIR, "chat-test.html"), "r", encoding="utf-8") as file:
+    with open(
+        os.path.join(STATIC_DIR, "chat-test.html"), "r", encoding="utf-8"
+    ) as file:
         return HTMLResponse(file.read())
 
 
@@ -117,9 +130,6 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
             "message_en": "Internal server error",
         },
     )
-
-
-#
 
 
 @app.websocket("/ws")

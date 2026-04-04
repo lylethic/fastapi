@@ -30,7 +30,7 @@ from app.services.chat.chat_service import (
     get_user_direct_chats,
 )
 from app.config import settings
-from app.cache_utils import clear_cache_for_get_direct_chats
+from app.utils.cache_utils import clear_cache_for_get_direct_chats
 from app.db.session import get_db
 from app.dependencies import get_cache, get_cache_setting, get_current_user
 from app.db.models import Chat, Message, Users
@@ -127,8 +127,8 @@ async def get_user_messages_in_chat(
     # get larger of provided messages size or unread messages
     size: int = max(size, unread_messages_count)
 
-    # determine cache key
-    cache_key: str = f"messages_{chat_guid}_{size}"
+    # Response depends on current user (`is_read`, `last_read_message`) and schema version.
+    cache_key: str = f"messages_v2_{chat_guid}_{current_user['id']}_{size}"
 
     if cache_enabled:
         # return cached chat messages if key exists

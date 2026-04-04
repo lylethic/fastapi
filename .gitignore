@@ -20,4 +20,6 @@ build/
 *.log
 uploads/
 
+docs/affiliate_schema.sql
+
 .codex

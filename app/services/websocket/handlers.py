@@ -9,13 +9,13 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.managers.websocket_manager import WebSocketManager
-from app.cache_utils import (
+from app.utils.cache_utils import (
     clear_cache_for_get_direct_chats,
     clear_cache_for_get_messages,
 )
 from app.db.models import Chat, Message, ReadStatus, Users as User
 from app.db.models import MessageMessageType
-from app.websocket.schemas import (
+from app.services.websocket.schemas import (
     AddUserToChatSchema,
     MessageReadSchema,
     NotifyChatRemovedSchema,
@@ -23,7 +23,7 @@ from app.websocket.schemas import (
     SendMessageSchema,
     UserTypingSchema,
 )
-from app.websocket.services import (
+from app.services.websocket.services import (
     get_chat_id_by_guid,
     get_message_by_guid,
     mark_last_read_message,

@@ -14,10 +14,10 @@ from app.config import ALGORITHM, JWT_SECRET_KEY
 from app.db.session import get_db
 from app.dependencies import get_cache, get_cache_setting
 from app.db.models import Users as User
-from app.websocket.exceptions import WebsocketTooManyRequests
-from app.websocket.handlers import socket_manager
-from app.websocket.rate_limiter import websocket_callback
-from app.websocket.services import (
+from app.services.websocket.exceptions import WebsocketTooManyRequests
+from app.services.websocket.handlers import socket_manager
+from app.services.websocket.rate_limiter import websocket_callback
+from app.services.websocket.services import (
     check_user_statuses,
     get_user_active_direct_chats,
     mark_user_as_offline,

@@ -1,8 +1,8 @@
-const storageKey = "chatTesterState";
+const storageKey = 'chatTesterState';
 
 const state = {
   socket: null,
-  token: "",
+  token: '',
   me: null,
   chats: [],
   activeChat: null,
@@ -11,43 +11,43 @@ const state = {
 };
 
 const els = {
-  baseUrl: document.querySelector("#baseUrl"),
-  email: document.querySelector("#email"),
-  password: document.querySelector("#password"),
-  token: document.querySelector("#token"),
-  recipientGuid: document.querySelector("#recipientGuid"),
-  connectionBadge: document.querySelector("#connectionBadge"),
-  currentUserCard: document.querySelector("#currentUserCard"),
-  chatList: document.querySelector("#chatList"),
-  messages: document.querySelector("#messages"),
-  activeChatTitle: document.querySelector("#activeChatTitle"),
-  activeChatMeta: document.querySelector("#activeChatMeta"),
-  messageInput: document.querySelector("#messageInput"),
-  logOutput: document.querySelector("#logOutput"),
-  loginBtn: document.querySelector("#loginBtn"),
-  loadProfileBtn: document.querySelector("#loadProfileBtn"),
-  connectBtn: document.querySelector("#connectBtn"),
-  disconnectBtn: document.querySelector("#disconnectBtn"),
-  loadChatsBtn: document.querySelector("#loadChatsBtn"),
-  loadMessagesBtn: document.querySelector("#loadMessagesBtn"),
-  sendBtn: document.querySelector("#sendBtn"),
-  typingBtn: document.querySelector("#typingBtn"),
-  markReadBtn: document.querySelector("#markReadBtn"),
-  clearLogBtn: document.querySelector("#clearLogBtn"),
-  createChatBtn: document.querySelector("#createChatBtn"),
-  copyUserGuidBtn: document.querySelector("#copyUserGuidBtn"),
+  baseUrl: document.querySelector('#baseUrl'),
+  email: document.querySelector('#email'),
+  password: document.querySelector('#password'),
+  token: document.querySelector('#token'),
+  recipientGuid: document.querySelector('#recipientGuid'),
+  connectionBadge: document.querySelector('#connectionBadge'),
+  currentUserCard: document.querySelector('#currentUserCard'),
+  chatList: document.querySelector('#chatList'),
+  messages: document.querySelector('#messages'),
+  activeChatTitle: document.querySelector('#activeChatTitle'),
+  activeChatMeta: document.querySelector('#activeChatMeta'),
+  messageInput: document.querySelector('#messageInput'),
+  logOutput: document.querySelector('#logOutput'),
+  loginBtn: document.querySelector('#loginBtn'),
+  loadProfileBtn: document.querySelector('#loadProfileBtn'),
+  connectBtn: document.querySelector('#connectBtn'),
+  disconnectBtn: document.querySelector('#disconnectBtn'),
+  loadChatsBtn: document.querySelector('#loadChatsBtn'),
+  loadMessagesBtn: document.querySelector('#loadMessagesBtn'),
+  sendBtn: document.querySelector('#sendBtn'),
+  typingBtn: document.querySelector('#typingBtn'),
+  markReadBtn: document.querySelector('#markReadBtn'),
+  clearLogBtn: document.querySelector('#clearLogBtn'),
+  createChatBtn: document.querySelector('#createChatBtn'),
+  copyUserGuidBtn: document.querySelector('#copyUserGuidBtn'),
 };
 
 function normalizeBaseUrl(url) {
   if (!url) {
     return `${window.location.protocol}//${window.location.host}`;
   }
-  return url.replace(/\/$/, "");
+  return url.replace(/\/$/, '');
 }
 
 function wsUrlFromBaseUrl(baseUrl, token) {
-  const wsProtocol = baseUrl.startsWith("https://") ? "wss://" : "ws://";
-  const host = baseUrl.replace(/^https?:\/\//, "");
+  const wsProtocol = baseUrl.startsWith('https://') ? 'wss://' : 'ws://';
+  const host = baseUrl.replace(/^https?:\/\//, '');
   return `${wsProtocol}${host}/api/v1/ws/?token=${encodeURIComponent(token)}`;
 }
 
@@ -71,10 +71,11 @@ function restoreState() {
 
   try {
     const parsed = JSON.parse(raw);
-    els.baseUrl.value = parsed.baseUrl || `${window.location.protocol}//${window.location.host}`;
-    els.email.value = parsed.email || "";
-    els.token.value = parsed.token || "";
-    els.recipientGuid.value = parsed.recipientGuid || "";
+    els.baseUrl.value =
+      parsed.baseUrl || `${window.location.protocol}//${window.location.host}`;
+    els.email.value = parsed.email || '';
+    els.token.value = parsed.token || '';
+    els.recipientGuid.value = parsed.recipientGuid || '';
   } catch {
     els.baseUrl.value = `${window.location.protocol}//${window.location.host}`;
   }
@@ -86,15 +87,16 @@ function setBadge(status, label) {
 }
 
 function log(label, payload) {
-  const ts = new Date().toLocaleTimeString("vi-VN", { hour12: false });
-  const line = payload === undefined
-    ? `[${ts}] ${label}`
-    : `[${ts}] ${label}\n${typeof payload === "string" ? payload : JSON.stringify(payload, null, 2)}`;
+  const ts = new Date().toLocaleTimeString('vi-VN', { hour12: false });
+  const line =
+    payload === undefined
+      ? `[${ts}] ${label}`
+      : `[${ts}] ${label}\n${typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2)}`;
   els.logOutput.textContent = `${line}\n\n${els.logOutput.textContent}`;
 }
 
 function safeParse(data) {
-  if (typeof data !== "string") {
+  if (typeof data !== 'string') {
     return data;
   }
   try {
@@ -107,10 +109,10 @@ function safeParse(data) {
 function authHeaders() {
   const token = els.token.value.trim();
   if (!token) {
-    throw new Error("Thiếu access token");
+    throw new Error('Thiếu access token');
   }
   return {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
 }
@@ -127,31 +129,31 @@ async function apiFetch(path, options = {}) {
   });
   const data = await response.json();
   if (data.is_success === false) {
-    throw new Error(data.message || data.message_en || "Request failed");
+    throw new Error(data.message || data.message_en || 'Request failed');
   }
   return data.data ?? data;
 }
 
 function renderCurrentUser() {
   if (!state.me) {
-    els.currentUserCard.className = "info-card empty";
-    els.currentUserCard.textContent = "Chưa tải thông tin user.";
+    els.currentUserCard.className = 'info-card empty';
+    els.currentUserCard.textContent = 'Chưa tải thông tin user.';
     return;
   }
 
-  els.currentUserCard.className = "info-card";
+  els.currentUserCard.className = 'info-card';
   els.currentUserCard.innerHTML = [
-    `<strong>${state.me.name || state.me.username || "Unknown"}</strong>`,
-    `<div>${state.me.email || ""}</div>`,
+    `<strong>${state.me.name || state.me.username || 'Unknown'}</strong>`,
+    `<div>${state.me.email || ''}</div>`,
     `<div><small>GUID: ${state.me.guid}</small></div>`,
-    `<div><small>Roles: ${(state.me.roles || []).join(", ") || "-"}</small></div>`,
+    `<div><small>Roles: ${(state.me.roles || []).join(', ') || '-'}</small></div>`,
     `<div><small>Permissions: ${(state.me.permissions || []).length}</small></div>`,
-  ].join("");
+  ].join('');
 }
 
 function chatDisplayName(chat) {
   if (!chat) {
-    return "Unknown chat";
+    return 'Unknown chat';
   }
   const users = Array.isArray(chat.users) ? chat.users : [];
   const friend = users.find((user) => user.guid !== state.me?.guid) || users[0];
@@ -161,15 +163,32 @@ function chatDisplayName(chat) {
   return `${friend.name} · @${friend.username}`;
 }
 
+function resolveProfilePicUrl(profilePic) {
+  if (!profilePic) {
+    return '/static/knitting.png';
+  }
+  if (
+    profilePic.startsWith('http://') ||
+    profilePic.startsWith('https://') ||
+    profilePic.startsWith('/')
+  ) {
+    return profilePic;
+  }
+
+  return `/uploads/${profilePic.replace(/^uploads\//, '')}`;
+}
+
 function setActiveChat(chatGuid) {
-  state.activeChat = state.chats.find((chat) => chat.chat_guid === chatGuid) || null;
+  state.activeChat =
+    state.chats.find((chat) => chat.chat_guid === chatGuid) || null;
   state.messages = [];
   state.lastReadMessage = null;
   renderChats();
   renderMessages();
   if (!state.activeChat) {
-    els.activeChatTitle.textContent = "Chưa chọn chat";
-    els.activeChatMeta.textContent = "Chọn một chat để xem lịch sử và gửi message.";
+    els.activeChatTitle.textContent = 'Chưa chọn chat';
+    els.activeChatMeta.textContent =
+      'Chọn một chat để xem lịch sử và gửi message.';
     persistState();
     return;
   }
@@ -181,16 +200,17 @@ function setActiveChat(chatGuid) {
 
 function renderChats() {
   if (!state.chats.length) {
-    els.chatList.className = "chat-list empty";
-    els.chatList.textContent = "Chưa có chat nào được tải.";
+    els.chatList.className = 'chat-list empty';
+    els.chatList.textContent = 'Chưa có chat nào được tải.';
     return;
   }
 
-  els.chatList.className = "chat-list";
-  els.chatList.innerHTML = state.chats.map((chat) => {
-    const isActive = state.activeChat?.chat_guid === chat.chat_guid;
-    return `
-      <button class="chat-item ${isActive ? "active" : ""}" data-chat-guid="${chat.chat_guid}">
+  els.chatList.className = 'chat-list';
+  els.chatList.innerHTML = state.chats
+    .map((chat) => {
+      const isActive = state.activeChat?.chat_guid === chat.chat_guid;
+      return `
+      <button class="chat-item ${isActive ? 'active' : ''}" data-chat-guid="${chat.chat_guid}">
         <div class="chat-item-title">
           <strong>${chatDisplayName(chat)}</strong>
           <span class="meta-chip">${chat.new_messages_count} new</span>
@@ -198,59 +218,81 @@ function renderChats() {
         <small>${chat.chat_guid}</small>
       </button>
     `;
-  }).join("");
+    })
+    .join('');
 
-  els.chatList.querySelectorAll(".chat-item").forEach((button) => {
-    button.addEventListener("click", () => setActiveChat(button.dataset.chatGuid));
+  els.chatList.querySelectorAll('.chat-item').forEach((button) => {
+    button.addEventListener('click', () =>
+      setActiveChat(button.dataset.chatGuid),
+    );
   });
 }
 
 function renderMessages() {
   if (!state.activeChat) {
-    els.messages.className = "messages empty";
-    els.messages.textContent = "Chưa có dữ liệu message.";
+    els.messages.className = 'messages empty';
+    els.messages.textContent = 'Chưa có dữ liệu message.';
     return;
   }
 
   if (!state.messages.length) {
-    els.messages.className = "messages empty";
-    els.messages.textContent = "Chat này chưa có message hoặc bạn chưa load lịch sử.";
+    els.messages.className = 'messages empty';
+    els.messages.textContent =
+      'Chat này chưa có message hoặc bạn chưa load lịch sử.';
     return;
   }
 
-  els.messages.className = "messages";
-  els.messages.innerHTML = state.messages.map((message) => {
-    const mine = message.user_guid === state.me?.guid;
-    return `
-      <div class="message-row ${mine ? "mine" : ""}">
+  els.messages.className = 'messages';
+  els.messages.innerHTML = state.messages
+    .map((message) => {
+      const mine = message.user_guid === state.me?.guid;
+      const displayName = mine
+        ? 'You'
+        : escapeHtml(message.name || message.username || 'User');
+      const avatarUrl = resolveProfilePicUrl(message.profile_pic);
+      const avatarAlt = escapeHtml(message.name || message.username || 'User');
+      return `
+      <div class="message-row ${mine ? 'mine' : ''}">
+        <img
+          class="message-avatar"
+          src="${avatarUrl}"
+          alt="${avatarAlt}"
+          onerror="this.onerror=null;this.src='/static/knitting.png';"
+        />
         <article class="message-bubble">
           <div class="message-meta">
-            <strong>${mine ? "You" : message.user_guid}</strong>
-            <small>${new Date(message.created).toLocaleString("vi-VN")}</small>
+            <strong>${displayName}</strong>
+            <small>${new Date(message.created).toLocaleString('vi-VN')}</small>
           </div>
-          <p class="message-text">${escapeHtml(message.content || "")}</p>
-          <small>${message.message_guid}${message.is_read ? " | read" : ""}</small>
+          <p class="message-text">${escapeHtml(message.content || '')}</p>
+          <small>${message.message_guid}${message.is_read ? ' | read' : ''}</small>
         </article>
       </div>
     `;
-  }).join("");
+    })
+    .join('');
   els.messages.scrollTop = els.messages.scrollHeight;
 }
 
 function escapeHtml(value) {
   return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 function upsertIncomingMessage(message) {
-  const index = state.messages.findIndex((item) => item.message_guid === message.message_guid);
+  const index = state.messages.findIndex(
+    (item) => item.message_guid === message.message_guid,
+  );
   if (index >= 0) {
     state.messages[index] = { ...state.messages[index], ...message };
-  } else if (!state.activeChat || state.activeChat.chat_guid === message.chat_guid) {
+  } else if (
+    !state.activeChat ||
+    state.activeChat.chat_guid === message.chat_guid
+  ) {
     state.messages.push(message);
   }
 
@@ -264,7 +306,9 @@ function applyMessageReadEvent(event) {
       return message;
     }
 
-    if (new Date(message.created) <= new Date(event.last_read_message_created_at)) {
+    if (
+      new Date(message.created) <= new Date(event.last_read_message_created_at)
+    ) {
       return { ...message, is_read: true };
     }
 
@@ -274,42 +318,42 @@ function applyMessageReadEvent(event) {
 }
 
 function handleSocketPayload(payload) {
-  if (typeof payload === "string") {
-    log("WS raw", payload);
+  if (typeof payload === 'string') {
+    log('WS raw', payload);
     return;
   }
 
-  log("WS in", payload);
+  log('WS in', payload);
 
-  if (payload.status === "error") {
+  if (payload.status === 'error') {
     return;
   }
 
-  if (payload.type === "new") {
+  if (payload.type === 'new') {
     upsertIncomingMessage(payload);
     return;
   }
 
-  if (payload.type === "message_read") {
+  if (payload.type === 'message_read') {
     applyMessageReadEvent(payload);
     return;
   }
 
-  if (payload.type === "user_typing") {
+  if (payload.type === 'user_typing') {
     els.activeChatMeta.textContent = `${chatDisplayName(state.activeChat)} | ${payload.user_guid} is typing...`;
     return;
   }
 
-  if (payload.type === "new_chat_created") {
-    loadChats().catch((error) => log("Load chats failed", error.message));
+  if (payload.type === 'new_chat_created') {
+    loadChats().catch((error) => log('Load chats failed', error.message));
     return;
   }
 
-  if (payload.type === "chat_deleted") {
+  if (payload.type === 'chat_deleted') {
     if (state.activeChat?.chat_guid === payload.chat_guid) {
       setActiveChat(null);
     }
-    loadChats().catch((error) => log("Load chats failed", error.message));
+    loadChats().catch((error) => log('Load chats failed', error.message));
   }
 }
 
@@ -319,37 +363,37 @@ async function login() {
   const password = els.password.value;
 
   if (!email || !password) {
-    throw new Error("Thiếu email hoặc password");
+    throw new Error('Thiếu email hoặc password');
   }
 
   const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
   const data = await response.json();
   if (data.is_success === false) {
-    throw new Error(data.message || data.message_en || "Login failed");
+    throw new Error(data.message || data.message_en || 'Login failed');
   }
 
   els.token.value = data.data.access_token;
   state.token = data.data.access_token;
   persistState();
-  log("Login success", { email });
+  log('Login success', { email });
 }
 
 async function loadProfile() {
-  state.me = await apiFetch("/api/v1/users/me");
+  state.me = await apiFetch('/api/v1/users/me');
   renderCurrentUser();
-  log("Loaded current user", state.me);
+  log('Loaded current user', state.me);
 }
 
 async function loadChats() {
-  const data = await apiFetch("/api/v1/chat/chats/direct");
+  const data = await apiFetch('/api/v1/chat/chats/direct');
   state.chats = data.chats || [];
   renderChats();
 
-  const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+  const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
   const preferredGuid = state.activeChat?.chat_guid || saved.activeChatGuid;
   if (preferredGuid) {
     setActiveChat(preferredGuid);
@@ -358,45 +402,47 @@ async function loadChats() {
   if (!state.activeChat && state.chats[0]) {
     setActiveChat(state.chats[0].chat_guid);
   }
-  log("Loaded chats", data);
+  log('Loaded chats', data);
 }
 
 async function loadMessages() {
   if (!state.activeChat) {
-    throw new Error("Chưa chọn chat");
+    throw new Error('Chưa chọn chat');
   }
 
-  const data = await apiFetch(`/api/v1/chat/${state.activeChat.chat_guid}/messages?size=50`);
+  const data = await apiFetch(
+    `/api/v1/chat/${state.activeChat.chat_guid}/messages?size=50`,
+  );
   state.messages = data.messages || [];
   state.lastReadMessage = data.last_read_message || null;
   renderMessages();
-  log("Loaded messages", data);
+  log('Loaded messages', data);
 }
 
 async function createChat() {
   const recipientUserGuid = els.recipientGuid.value.trim();
   if (!recipientUserGuid) {
-    throw new Error("Thiếu recipient GUID");
+    throw new Error('Thiếu recipient GUID');
   }
 
-  const data = await apiFetch("/api/v1/chat/direct", {
-    method: "POST",
+  const data = await apiFetch('/api/v1/chat/direct', {
+    method: 'POST',
     body: JSON.stringify({ recipient_user_guid: recipientUserGuid }),
   });
-  log("Created chat", data);
+  log('Created chat', data);
   await loadChats();
 }
 
 function ensureSocketOpen() {
   if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
-    throw new Error("WebSocket chưa kết nối");
+    throw new Error('WebSocket chưa kết nối');
   }
 }
 
 async function connectSocket() {
   const token = els.token.value.trim();
   if (!token) {
-    throw new Error("Thiếu access token");
+    throw new Error('Thiếu access token');
   }
 
   if (!state.me) {
@@ -410,28 +456,28 @@ async function connectSocket() {
     state.socket.close();
   }
 
-  setBadge("idle", "Connecting");
+  setBadge('idle', 'Connecting');
   state.socket = new WebSocket(url);
-  log("WS connect", url);
+  log('WS connect', url);
 
-  state.socket.addEventListener("open", () => {
-    setBadge("open", "Open");
-    log("WS open");
+  state.socket.addEventListener('open', () => {
+    setBadge('open', 'Open');
+    log('WS open');
   });
 
-  state.socket.addEventListener("message", (event) => {
+  state.socket.addEventListener('message', (event) => {
     const parsed = safeParse(event.data);
     handleSocketPayload(parsed);
   });
 
-  state.socket.addEventListener("close", (event) => {
-    setBadge("closed", `Closed ${event.code}`);
-    log("WS close", { code: event.code, reason: event.reason });
+  state.socket.addEventListener('close', (event) => {
+    setBadge('closed', `Closed ${event.code}`);
+    log('WS close', { code: event.code, reason: event.reason });
   });
 
-  state.socket.addEventListener("error", () => {
-    setBadge("error", "Error");
-    log("WS error");
+  state.socket.addEventListener('error', () => {
+    setBadge('error', 'Error');
+    log('WS error');
   });
 }
 
@@ -444,16 +490,16 @@ function disconnectSocket() {
 function sendSocketMessage(payload) {
   ensureSocketOpen();
   state.socket.send(JSON.stringify(payload));
-  log("WS out", payload);
+  log('WS out', payload);
 }
 
 function sendTyping() {
   if (!state.activeChat || !state.me) {
-    throw new Error("Thiếu chat hoặc current user");
+    throw new Error('Thiếu chat hoặc current user');
   }
 
   sendSocketMessage({
-    type: "user_typing",
+    type: 'user_typing',
     chat_guid: state.activeChat.chat_guid,
     user_guid: state.me.guid,
   });
@@ -461,31 +507,31 @@ function sendTyping() {
 
 function sendMessage() {
   if (!state.activeChat || !state.me) {
-    throw new Error("Thiếu chat hoặc current user");
+    throw new Error('Thiếu chat hoặc current user');
   }
 
   const content = els.messageInput.value.trim();
   if (!content) {
-    throw new Error("Message rỗng");
+    throw new Error('Message rỗng');
   }
 
   sendSocketMessage({
-    type: "new_message",
+    type: 'new_message',
     chat_guid: state.activeChat.chat_guid,
     user_guid: state.me.guid,
     content,
   });
-  els.messageInput.value = "";
+  els.messageInput.value = '';
 }
 
 function markLastRead() {
   if (!state.activeChat || !state.messages.length) {
-    throw new Error("Không có message để mark read");
+    throw new Error('Không có message để mark read');
   }
 
   const target = state.messages[state.messages.length - 1];
   sendSocketMessage({
-    type: "message_read",
+    type: 'message_read',
     chat_guid: state.activeChat.chat_guid,
     message_guid: target.message_guid,
   });
@@ -501,29 +547,45 @@ async function withAction(action, fn) {
 
 function bindEvents() {
   [els.baseUrl, els.email, els.token, els.recipientGuid].forEach((input) => {
-    input.addEventListener("change", persistState);
+    input.addEventListener('change', persistState);
   });
 
-  els.loginBtn.addEventListener("click", () => withAction("Login", login));
-  els.loadProfileBtn.addEventListener("click", () => withAction("Load profile", loadProfile));
-  els.connectBtn.addEventListener("click", () => withAction("Connect WS", connectSocket));
-  els.disconnectBtn.addEventListener("click", disconnectSocket);
-  els.loadChatsBtn.addEventListener("click", () => withAction("Load chats", loadChats));
-  els.loadMessagesBtn.addEventListener("click", () => withAction("Load messages", loadMessages));
-  els.sendBtn.addEventListener("click", () => withAction("Send message", async () => sendMessage()));
-  els.typingBtn.addEventListener("click", () => withAction("Send typing", async () => sendTyping()));
-  els.markReadBtn.addEventListener("click", () => withAction("Mark read", async () => markLastRead()));
-  els.createChatBtn.addEventListener("click", () => withAction("Create chat", createChat));
-  els.clearLogBtn.addEventListener("click", () => {
-    els.logOutput.textContent = "";
+  els.loginBtn.addEventListener('click', () => withAction('Login', login));
+  els.loadProfileBtn.addEventListener('click', () =>
+    withAction('Load profile', loadProfile),
+  );
+  els.connectBtn.addEventListener('click', () =>
+    withAction('Connect WS', connectSocket),
+  );
+  els.disconnectBtn.addEventListener('click', disconnectSocket);
+  els.loadChatsBtn.addEventListener('click', () =>
+    withAction('Load chats', loadChats),
+  );
+  els.loadMessagesBtn.addEventListener('click', () =>
+    withAction('Load messages', loadMessages),
+  );
+  els.sendBtn.addEventListener('click', () =>
+    withAction('Send message', async () => sendMessage()),
+  );
+  els.typingBtn.addEventListener('click', () =>
+    withAction('Send typing', async () => sendTyping()),
+  );
+  els.markReadBtn.addEventListener('click', () =>
+    withAction('Mark read', async () => markLastRead()),
+  );
+  els.createChatBtn.addEventListener('click', () =>
+    withAction('Create chat', createChat),
+  );
+  els.clearLogBtn.addEventListener('click', () => {
+    els.logOutput.textContent = '';
   });
-  els.copyUserGuidBtn.addEventListener("click", async () => {
+  els.copyUserGuidBtn.addEventListener('click', async () => {
     if (!state.me?.guid) {
-      log("Copy GUID failed", "Chưa có current user");
+      log('Copy GUID failed', 'Chưa có current user');
       return;
     }
     await navigator.clipboard.writeText(state.me.guid);
-    log("Copied current user guid", state.me.guid);
+    log('Copied current user guid', state.me.guid);
   });
 }
 
@@ -532,9 +594,9 @@ function init() {
   renderCurrentUser();
   renderChats();
   renderMessages();
-  setBadge("idle", "Idle");
+  setBadge('idle', 'Idle');
   bindEvents();
-  log("Ready", "Mở /chat-test, login, load chats rồi connect websocket.");
+  log('Ready', 'Mở /chat-test, login, load chats rồi connect websocket.');
 }
 
 init();

@@ -1,9 +1,12 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import RolePermissions
+from app.providers.baseProvider import BaseProvider
 from app.schemas.base_schema import BaseQueryPaginationRequest
 from app.schemas.rolepermission import (
     RolePermissionCreateBody,
@@ -13,92 +16,162 @@ from app.schemas.rolepermission import (
 )
 
 
+class RolePermissionService(
+    BaseProvider[
+        RolePermissions,
+        RolePermissionCreateBody,
+        RolePermissionUpdateBody,
+        RolePermissionResponse,
+        RolePermissionPagination,
+    ]
+):
+    def __init__(self) -> None:
+        super().__init__(
+            model=RolePermissions,
+            response_schema=RolePermissionResponse,
+            pagination_schema=RolePermissionPagination,
+            not_found_message="Role permission not found",
+            already_exists_message="Role permission already exists",
+        )
+
+    def build_search_filters(self, search: str) -> list:
+        if not search:
+            return []
+        return [
+            or_(
+                RolePermissions.role_id == search,
+                RolePermissions.permission_id == search,
+            )
+        ]
+
+    async def get_by_keys(
+        self, db: AsyncSession, role_id: str, permission_id: str
+    ) -> RolePermissions | None:
+        result = await db.execute(
+            select(RolePermissions).where(
+                and_(
+                    RolePermissions.role_id == role_id,
+                    RolePermissions.permission_id == permission_id,
+                    *self.base_filters(),
+                )
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def create(
+        self,
+        db: AsyncSession,
+        body: RolePermissionCreateBody,
+        current_user: str | None = None,
+    ) -> RolePermissions:
+        existing = await self.get_by_keys(db, body.role_id, body.permission_id)
+        if existing:
+            raise HTTPException(status_code=400, detail=self.already_exists_message)
+
+        db_obj = RolePermissions(
+            role_id=body.role_id,
+            permission_id=body.permission_id,
+        )
+
+        now = datetime.now(timezone.utc)
+        if hasattr(db_obj, "created"):
+            db_obj.created = now
+        if current_user is not None and hasattr(db_obj, "created_by"):
+            db_obj.created_by = current_user
+
+        db.add(db_obj)
+        try:
+            await db.commit()
+            await db.refresh(db_obj)
+            return db_obj
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(status_code=400, detail=self.already_exists_message)
+
+    async def update_by_keys(
+        self,
+        db: AsyncSession,
+        role_id: str,
+        permission_id: str,
+        body: RolePermissionUpdateBody,
+        current_user: str | None = None,
+    ) -> RolePermissions:
+        db_obj = await self.get_by_keys(db, role_id, permission_id)
+        if not db_obj:
+            raise HTTPException(status_code=404, detail=self.not_found_message)
+
+        next_role_id = body.role_id if body.role_id is not None else db_obj.role_id
+        next_permission_id = (
+            body.permission_id
+            if body.permission_id is not None
+            else db_obj.permission_id
+        )
+
+        if (
+            next_role_id != db_obj.role_id
+            or next_permission_id != db_obj.permission_id
+        ):
+            duplicate = await self.get_by_keys(db, next_role_id, next_permission_id)
+            if duplicate:
+                raise HTTPException(status_code=400, detail=self.already_exists_message)
+
+        db_obj.role_id = next_role_id
+        db_obj.permission_id = next_permission_id
+        if body.active is not None:
+            db_obj.active = body.active
+        if hasattr(db_obj, "updated"):
+            db_obj.updated = datetime.now(timezone.utc)
+        if current_user is not None and hasattr(db_obj, "updated_by"):
+            db_obj.updated_by = current_user
+
+        try:
+            await db.commit()
+            await db.refresh(db_obj)
+            return db_obj
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(status_code=400, detail=self.already_exists_message)
+
+    async def soft_delete_by_keys(
+        self, db: AsyncSession, role_id: str, permission_id: str
+    ) -> RolePermissions:
+        db_obj = await self.get_by_keys(db, role_id, permission_id)
+        if not db_obj:
+            raise HTTPException(status_code=404, detail=self.not_found_message)
+
+        if hasattr(db_obj, "active"):
+            db_obj.active = False
+        if hasattr(db_obj, "deleted"):
+            db_obj.deleted = True
+        if hasattr(db_obj, "updated"):
+            db_obj.updated = datetime.now(timezone.utc)
+
+        await db.commit()
+        await db.refresh(db_obj)
+        return db_obj
+
+
+role_permission_service = RolePermissionService()
+
+
 async def create_role_permission(
     db: AsyncSession, body: RolePermissionCreateBody
 ) -> RolePermissions:
-    result = await db.execute(
-        select(RolePermissions).where(
-            RolePermissions.role_id == body.role_id,
-            RolePermissions.permission_id == body.permission_id,
-        )
-    )
-    existing = result.scalar_one_or_none()
-    if existing:
-        raise HTTPException(status_code=400, detail="Role permission already exists")
-
-    role_permission = RolePermissions(
-        role_id=body.role_id,
-        permission_id=body.permission_id,
-    )
-    db.add(role_permission)
-
-    try:
-        await db.commit()
-        await db.refresh(role_permission)
-        return role_permission
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Role permission already exists")
+    return await role_permission_service.create(db=db, body=body)
 
 
 async def get_role_permissions(
     db: AsyncSession, pagination: BaseQueryPaginationRequest
 ) -> RolePermissionPagination:
-    filters = []
-
-    if pagination.search:
-        filters.append(
-            or_(
-                RolePermissions.role_id == pagination.search,
-                RolePermissions.permission_id == pagination.search,
-            )
-        )
-
-    if pagination.active is not None:
-        filters.append(RolePermissions.active == pagination.active)
-
-    count_stmt = select(func.count()).select_from(RolePermissions)
-    if filters:
-        count_stmt = count_stmt.where(*filters)
-
-    total_result = await db.execute(count_stmt)
-    total = total_result.scalar_one()
-    total_pages = (
-        (total + pagination.page_size - 1) // pagination.page_size if total else 0
-    )
-
-    stmt = select(RolePermissions)
-    if filters:
-        stmt = stmt.where(*filters)
-
-    stmt = (
-        stmt.order_by(RolePermissions.created.desc())
-        .offset((pagination.page - 1) * pagination.page_size)
-        .limit(pagination.page_size)
-    )
-
-    result = await db.execute(stmt)
-    items = result.scalars().all()
-
-    return RolePermissionPagination(
-        items=[RolePermissionResponse.model_validate(item) for item in items],
-        total=total,
-        page=pagination.page,
-        page_size=pagination.page_size,
-        total_pages=total_pages,
-    )
+    return await role_permission_service.get_all(db=db, pagination=pagination)
 
 
 async def get_role_permission_by_id(
     db: AsyncSession, role_id: str, permission_id: str
 ) -> RolePermissions | None:
-    result = await db.execute(
-        select(RolePermissions).where(
-            RolePermissions.role_id == role_id,
-            RolePermissions.permission_id == permission_id,
-        )
+    return await role_permission_service.get_by_keys(
+        db=db, role_id=role_id, permission_id=permission_id
     )
-    return result.scalar_one_or_none()
 
 
 async def update_role_permission(
@@ -107,54 +180,19 @@ async def update_role_permission(
     permission_id: str,
     body: RolePermissionUpdateBody,
 ) -> RolePermissions:
-    role_permission = await get_role_permission_by_id(db, role_id, permission_id)
-    if not role_permission:
-        raise HTTPException(status_code=404, detail="Role permission not found")
-
-    next_role_id = body.role_id if body.role_id is not None else role_permission.role_id
-    next_permission_id = (
-        body.permission_id
-        if body.permission_id is not None
-        else role_permission.permission_id
+    return await role_permission_service.update_by_keys(
+        db=db,
+        role_id=role_id,
+        permission_id=permission_id,
+        body=body,
     )
-
-    if (
-        next_role_id != role_permission.role_id
-        or next_permission_id != role_permission.permission_id
-    ):
-        duplicate_result = await db.execute(
-            select(RolePermissions).where(
-                RolePermissions.role_id == next_role_id,
-                RolePermissions.permission_id == next_permission_id,
-            )
-        )
-        duplicate = duplicate_result.scalar_one_or_none()
-        if duplicate:
-            raise HTTPException(
-                status_code=400, detail="Role permission already exists"
-            )
-
-    role_permission.role_id = next_role_id
-    role_permission.permission_id = next_permission_id
-    if body.active is not None:
-        role_permission.active = body.active
-
-    try:
-        await db.commit()
-        await db.refresh(role_permission)
-        return role_permission
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Role permission already exists")
 
 
 async def delete_role_permission(
     db: AsyncSession, role_id: str, permission_id: str
 ) -> RolePermissions:
-    role_permission = await get_role_permission_by_id(db, role_id, permission_id)
-    if not role_permission:
-        raise HTTPException(status_code=404, detail="Role permission not found")
-
-    await db.delete(role_permission)
-    await db.commit()
-    return role_permission
+    return await role_permission_service.soft_delete_by_keys(
+        db=db,
+        role_id=role_id,
+        permission_id=permission_id,
+    )

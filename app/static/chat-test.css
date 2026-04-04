@@ -20,11 +20,19 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(228, 160, 94, 0.35), transparent 32%),
-    radial-gradient(circle at bottom right, rgba(107, 155, 120, 0.24), transparent 26%),
+    radial-gradient(
+      circle at top left,
+      rgba(228, 160, 94, 0.35),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(107, 155, 120, 0.24),
+      transparent 26%
+    ),
     linear-gradient(135deg, #f7f0e3 0%, #ece4d5 100%);
 }
 
@@ -35,15 +43,15 @@ textarea {
 }
 
 .page-shell {
-  display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 20px;
   padding: 20px;
 }
 
 .workspace {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr) 360px;
+  grid-template-columns: 320px minmax(0, 1fr);
   gap: 20px;
   min-width: 0;
 }
@@ -160,7 +168,11 @@ textarea:focus {
   padding: 12px 16px;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 140ms ease, opacity 140ms ease, background 140ms ease;
+  margin-top: 6px;
+  transition:
+    transform 140ms ease,
+    opacity 140ms ease,
+    background 140ms ease;
 }
 
 .btn:hover,
@@ -253,7 +265,11 @@ textarea:focus {
 
 .chat-item.active {
   border-color: rgba(196, 92, 47, 0.45);
-  background: linear-gradient(135deg, rgba(196, 92, 47, 0.14), rgba(255, 255, 255, 0.92));
+  background: linear-gradient(
+    135deg,
+    rgba(196, 92, 47, 0.14),
+    rgba(255, 255, 255, 0.92)
+  );
 }
 
 .chat-item-title,
@@ -273,7 +289,7 @@ textarea:focus {
 .message-bubble small,
 .meta-chip,
 .log-output {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .meta-chip {
@@ -294,10 +310,16 @@ textarea:focus {
 
 .message-row {
   display: flex;
+  align-items: flex-end;
+  gap: 10px;
 }
 
 .message-row.mine {
   justify-content: flex-end;
+}
+
+.message-row.mine .message-avatar {
+  order: 2;
 }
 
 .message-bubble {
@@ -308,8 +330,22 @@ textarea:focus {
   border: 1px solid rgba(111, 99, 86, 0.12);
 }
 
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex: 0 0 36px;
+  border: 1px solid rgba(111, 99, 86, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+}
+
 .message-row.mine .message-bubble {
-  background: linear-gradient(135deg, rgba(196, 92, 47, 0.16), rgba(255, 255, 255, 0.92));
+  background: linear-gradient(
+    135deg,
+    rgba(196, 92, 47, 0.16),
+    rgba(255, 255, 255, 0.92)
+  );
   border-color: rgba(196, 92, 47, 0.2);
 }
 

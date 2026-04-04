@@ -80,6 +80,9 @@ class LastReadMessageSchema(BaseModel):
 class GetMessageSchema(BaseModel):
     message_guid: UUID4
     user_guid: UUID4
+    profile_pic: str | None = None
+    name: str
+    username: str
     chat_guid: UUID4
     content: str
     created: datetime
