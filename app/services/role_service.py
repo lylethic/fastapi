@@ -83,36 +83,5 @@ class RoleService(
 role_service = RoleService()
 
 
-async def create_role(
-    db: AsyncSession, body: RoleCreateBody, current_user: str | None = None
-) -> Roles:
-    return await role_service.post(db=db, body=body, current_user=current_user)
-
-
-async def get_role(
-    db: AsyncSession, pagination: BaseQueryPaginationRequest
-) -> RolePagination:
-    return await role_service.get_all(db=db, pagination=pagination)
-
-
-async def get_role_by_id(db: AsyncSession, id: str) -> Roles | None:
-    return await role_service.get_by_id(db=db, id=id)
-
-
-async def update_role(
-    db: AsyncSession,
-    id: str,
-    body: RoleUpdateBody,
-    current_user: str | None = None,
-) -> Roles:
-    return await role_service.update(
-        db=db, id=id, body=body, current_user=current_user
-    )
-
-
-async def delete_role(db: AsyncSession, id: str) -> Roles:
-    return await role_service.soft_delete(db=db, id=id)
-
-
 async def get_role_by_name(db: AsyncSession, name: str) -> Roles | None:
     return await role_service.get_by_name(db=db, name=name)

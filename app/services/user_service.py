@@ -1,31 +1,27 @@
 import json
 import os
-from uuid import uuid4
 import uuid
+from uuid import uuid4
 
-from fastapi import Depends, File, HTTPException, UploadFile
-
-from sqlalchemy import func, or_, select, text, and_
+from fastapi import File, HTTPException, UploadFile
+from sqlalchemy import and_, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import UPLOAD_DIR
 from app.db.models import Users
 from app.providers.baseProvider import BaseProvider
-from app.utils.token_utils import hash_password
-
 from app.schemas.base_schema import BaseQueryPaginationRequest
-
-from app.services.user_role_service import create as create_user_role
-from app.services.role_service import get_role_by_id, get_role_by_name
-
 from app.schemas.user import (
     UserCreateBody,
-    UserRegisterBody,
-    UserUpdateBody,
-    UserResponse,
     UserPagination,
+    UserRegisterBody,
+    UserResponse,
+    UserUpdateBody,
 )
 from app.schemas.user_role import UserRoleCreateBody
+from app.services.role_service import role_service as service, get_role_by_name
+from app.services.user_role_service import create as create_user_role
+from app.utils.token_utils import hash_password
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -104,7 +100,6 @@ class UserService(
 user_service = UserService()
 
 
-# create
 async def create_user(db: AsyncSession, body: UserCreateBody) -> Users:
     email_result = await db.execute(select(Users).where(Users.email == body.email))
     existing_email = email_result.scalar_one_or_none()
@@ -118,13 +113,12 @@ async def create_user(db: AsyncSession, body: UserCreateBody) -> Users:
     if existing_username:
         raise HTTPException(status_code=400, detail="Username already exists")
 
-    getRole = await get_role_by_id(db, body.role_id)
-    if getRole is None:
+    role = await service.get_by_id(db, body.role_id)
+    if role is None:
         raise HTTPException(status_code=400, detail="Role not found")
 
     try:
         hashed_password = hash_password(body.password)
-        # Create new user
         user = Users(
             id=str(uuid4()),
             guid=str(uuid4()),
@@ -135,10 +129,8 @@ async def create_user(db: AsyncSession, body: UserCreateBody) -> Users:
             profile_pic=body.profile_pic,
             city=body.city,
         )
-        # Add new user
         db.add(user)
 
-        # Assign role to user
         await create_user_role(
             db,
             UserRoleCreateBody(user_id=user.id, role_id=body.role_id),
@@ -150,12 +142,11 @@ async def create_user(db: AsyncSession, body: UserCreateBody) -> Users:
     except HTTPException:
         await db.rollback()
         raise
-    except Exception as e:
+    except Exception as exc:
         await db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
-# Register new user
 async def register_user(db: AsyncSession, body: UserRegisterBody) -> Users:
     email_result = await db.execute(
         select(Users).where(and_(Users.email == body.email, Users.deleted == False))
@@ -173,13 +164,12 @@ async def register_user(db: AsyncSession, body: UserRegisterBody) -> Users:
     if existing_username:
         raise HTTPException(status_code=400, detail="Username already exists")
 
-    getRoleName = await get_role_by_name(db, "CUSTOMER")
-    if getRoleName is None:
+    role = await get_role_by_name(db, "CUSTOMER")
+    if role is None:
         raise HTTPException(status_code=400, detail="Role not found")
 
     try:
         hashed_password = hash_password(body.password)
-        # Create new user
         user = Users(
             id=str(uuid4()),
             guid=str(uuid4()),
@@ -190,13 +180,11 @@ async def register_user(db: AsyncSession, body: UserRegisterBody) -> Users:
             profile_pic=body.profile_pic,
             city=body.city,
         )
-        # Add new user
         db.add(user)
 
-        # Assign role to user
         await create_user_role(
             db,
-            UserRoleCreateBody(user_id=user.id, role_id=getRoleName.id),
+            UserRoleCreateBody(user_id=user.id, role_id=role.id),
         )
 
         await db.commit()
@@ -205,9 +193,9 @@ async def register_user(db: AsyncSession, body: UserRegisterBody) -> Users:
     except HTTPException:
         await db.rollback()
         raise
-    except Exception as e:
+    except Exception as exc:
         await db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 async def get_user(
@@ -221,9 +209,6 @@ async def get_user_by_id(db: AsyncSession, id: str) -> Users:
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> Users:
-    """
-    Get user by email
-    """
     result = await db.execute(select(Users).where(Users.email == email))
     return result.scalar_one_or_none()
 
@@ -265,9 +250,8 @@ async def uploadImage(db: AsyncSession, id: str, file: UploadFile = File(...)):
     unique_name = f"{uuid.uuid4().hex}{ext}"
     save_path = os.path.join(UPLOAD_DIR, unique_name)
 
-    # Save file
-    with open(save_path, "wb") as f:
-        f.write(contents)
+    with open(save_path, "wb") as file_obj:
+        file_obj.write(contents)
 
     user.profile_pic = unique_name
     await db.commit()
@@ -357,7 +341,6 @@ async def get_user_detail(db: AsyncSession, user_id: str):
     return user
 
 
-# Get permissions and roles for user
 QUERY_ROLES_PERMISSIONS = """
 SELECT
     COALESCE(r.roles, JSON_ARRAY()) AS roles,
@@ -416,7 +399,6 @@ async def get_role_permission(db: AsyncSession, user_id: str):
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Key - value
     user = dict(row)
 
     if isinstance(user["roles"], str):

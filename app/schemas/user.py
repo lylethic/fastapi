@@ -70,6 +70,7 @@ class LoginRequest(BaseModel):
     email: str = Field(..., min_length=1, max_length=255)
     password: str = Field(..., min_length=6)
 
+    # Swagger default value
     model_config = {
         "json_schema_extra": {
             "example": {
