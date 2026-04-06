@@ -1,39 +1,22 @@
 from fastapi import HTTPException
-from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Roles
-from app.providers.baseProvider import BaseProvider
+from app.repositories.role_repository import role_repository
 from app.schemas.base_schema import BaseQueryPaginationRequest
 from app.schemas.role import (
     RoleCreateBody,
     RolePagination,
-    RoleResponse,
     RoleUpdateBody,
 )
 
 
-class RoleService(
-    BaseProvider[
-        Roles,
-        RoleCreateBody,
-        RoleUpdateBody,
-        RoleResponse,
-        RolePagination,
-    ]
-):
+class RoleService:
     def __init__(self) -> None:
-        super().__init__(
-            model=Roles,
-            response_schema=RoleResponse,
-            pagination_schema=RolePagination,
-            not_found_message="Role not found",
-            already_exists_message="Role already exists",
-            search_fields=["name"],
-        )
+        self.repository = role_repository
 
     async def validate_create(self, db: AsyncSession, body: RoleCreateBody) -> None:
-        existed = await self.get_by_name(db, body.name)
+        existed = await self.repository.get_by_name(db, body.name)
         if existed:
             raise HTTPException(status_code=400, detail="Role already exists")
 
@@ -43,17 +26,8 @@ class RoleService(
         if body.name is None:
             return
 
-        result = await db.execute(
-            select(Roles).where(
-                and_(
-                    Roles.name == body.name.upper(),
-                    Roles.id != db_obj.id,
-                    Roles.deleted.is_(False),
-                )
-            )
-        )
-        existed = result.scalar_one_or_none()
-        if existed:
+        existed = await self.repository.get_by_name(db, body.name)
+        if existed and existed.id != db_obj.id:
             raise HTTPException(status_code=400, detail="Role already exists")
 
     def map_create_data(self, body: RoleCreateBody) -> dict:
@@ -68,20 +42,52 @@ class RoleService(
             data["name"] = data["name"].upper()
         return data
 
-    async def get_by_name(self, db: AsyncSession, name: str) -> Roles | None:
-        result = await db.execute(
-            select(Roles).where(
-                and_(
-                    Roles.name == name.upper(),
-                    Roles.deleted.is_(False),
-                )
-            )
+    async def create(
+        self,
+        db: AsyncSession,
+        body: RoleCreateBody,
+        current_user: str | None = None,
+    ) -> Roles:
+        await self.validate_create(db, body)
+        return await self.repository.create_from_data(
+            db=db,
+            data=self.map_create_data(body),
+            current_user=current_user,
         )
-        return result.scalar_one_or_none()
+
+    async def get_all(
+        self, db: AsyncSession, pagination: BaseQueryPaginationRequest
+    ) -> RolePagination:
+        return await self.repository.get_all(db=db, pagination=pagination)
+
+    async def get_by_id(self, db: AsyncSession, id: str) -> Roles | None:
+        return await self.repository.get_by_id(db=db, id=id)
+
+    async def update(
+        self,
+        db: AsyncSession,
+        id: str,
+        body: RoleUpdateBody,
+        current_user: str | None = None,
+    ) -> Roles:
+        db_obj = await self.repository.get_by_id(db=db, id=id)
+        if not db_obj:
+            raise HTTPException(status_code=404, detail="Role not found")
+
+        await self.validate_update(db, db_obj, body)
+        return await self.repository.update_from_data(
+            db=db,
+            db_obj=db_obj,
+            update_data=self.map_update_data(body),
+            current_user=current_user,
+        )
+
+    async def soft_delete(self, db: AsyncSession, id: str) -> Roles:
+        return await self.repository.soft_delete(db=db, id=id)
 
 
 role_service = RoleService()
 
 
 async def get_role_by_name(db: AsyncSession, name: str) -> Roles | None:
-    return await role_service.get_by_name(db=db, name=name)
+    return await role_service.repository.get_by_name(db=db, name=name)

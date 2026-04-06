@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.response import ApiResponse, success_response
@@ -10,10 +10,10 @@ from app.schemas.role import (
     RoleCreateBody,
     RoleUpdateBody,
 )
-from app.services.assistant_service import require_permissions
-from app.services.role_service import role_service as service
 from app.schemas.base_schema import BaseQueryPaginationRequest
 from app.services.assistant_service import get_current_user
+from app.services.assistant_service import require_permissions
+from app.services.role_service import role_service
 
 router = APIRouter(prefix="/roles", tags=["Roles"])
 
@@ -32,7 +32,9 @@ async def create_role_api(
         require_permissions(Permission.SYS_ADMIN, Permission.WRITE)
     ),
 ):
-    role = await service.post(db=db, body=payload, current_user=current_user["id"])
+    role = await role_service.create(
+        db=db, body=payload, current_user=current_user["id"]
+    )
     return success_response(
         data=RoleResponse.model_validate(role),
         message="Thành công",
@@ -50,7 +52,7 @@ async def get_role_api(
     db: AsyncSession = Depends(get_db),
     pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    roles = await service.get_all(db=db, pagination=pagination)
+    roles = await role_service.get_all(db=db, pagination=pagination)
     return success_response(
         data=roles,
         message="Thành công",
@@ -60,7 +62,7 @@ async def get_role_api(
 
 @router.get("/{id}", summary="Get role by id")
 async def get_role_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
-    role = await service.get_by_id(db=db, id=id)
+    role = await role_service.get_by_id(db=db, id=id)
     if not role:
         return success_response(
             is_success=False,
@@ -86,7 +88,7 @@ async def update(
         require_permissions(Permission.SYS_ADMIN, Permission.EDIT)
     ),
 ):
-    role = await service.update(
+    role = await role_service.update(
         db=db, id=id, body=payload, current_user=current_user["id"]
     )
     return success_response(
@@ -104,7 +106,7 @@ async def delete(
         require_permissions(Permission.SYS_ADMIN, Permission.DELETE)
     ),
 ):
-    role = await service.soft_delete(db=db, id=id)
+    role = await role_service.soft_delete(db=db, id=id)
     return success_response(
         data=RoleResponse.model_validate(role),
         message="Thành công",

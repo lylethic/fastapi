@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import UPLOAD_DIR
 from app.db.models import Users
 from app.providers.baseProvider import BaseProvider
+from app.repositories.role_repository import role_repository as roleRepo
 from app.schemas.base_schema import BaseQueryPaginationRequest
 from app.schemas.user import (
     UserCreateBody,
@@ -19,7 +20,6 @@ from app.schemas.user import (
     UserUpdateBody,
 )
 from app.schemas.user_role import UserRoleCreateBody
-from app.services.role_service import role_service as service, get_role_by_name
 from app.services.user_role_service import create as create_user_role
 from app.utils.token_utils import hash_password
 

@@ -7,7 +7,7 @@ from app.db.session import get_db
 
 from app.schemas.base_schema import BaseQueryPaginationRequest
 
-from app.schemas.merchant_profile_schema import (
+from app.schemas.merchant_profile import (
     MerchantProfilesCreateBody,
     MerchantProfilesPagination,
     MerchantProfilesResponse,

@@ -3,7 +3,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
@@ -56,7 +55,7 @@ ALGORITHM = get_env("ALGORITHM", "HS256")
 
 MYSQL_USER = get_env("MYSQL_USER", "root")
 MYSQL_PASSWORD = get_env("MYSQL_PASSWORD", "111111")
-MYSQL_HOST = get_env("MYSQL_HOST", "localhost")
+MYSQL_HOST = get_env("MYSQL_HOST", "0.0.0.0")
 MYSQL_PORT = get_env_int("MYSQL_PORT", 3306)
 MYSQL_DATABASE = get_env("MYSQL_DATABASE", "fastapi")
 ENVIRONMENT = get_env("ENVIRONMENT", "development")
