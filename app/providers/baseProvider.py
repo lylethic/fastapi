@@ -22,7 +22,6 @@ from sqlalchemy.orm import DeclarativeMeta
 
 from app.schemas.base_schema import BaseQueryPaginationRequest
 
-
 ModelType = TypeVar("ModelType")
 
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)

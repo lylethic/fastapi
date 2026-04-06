@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
         app.state.redis = None
 
     logger.info("API is running at http://%s:%s", APP_HOST, APP_PORT)
-    logger.info("Swagger docs: http://%s:%s/docs", APP_HOST, APP_PORT)
+    logger.info("Swagger docs: http://%s:%s/swagger/index.html", APP_HOST, APP_PORT)
     yield
 
     # SHUTDOWN

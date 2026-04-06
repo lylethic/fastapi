@@ -85,22 +85,23 @@ Practical note:
 app/
 ├── api/
 │   ├── response.py
+│   ├── router.py
 │   └── v1/
-│       ├── router.py
-│       └── routers/
-│           ├── auth.py
-│           ├── chat.py
-│           ├── message.py
-│           ├── permission.py
-│           ├── role.py
-│           ├── role_permission.py
-│           ├── user.py
-│           └── user_role.py
+│       ├── auth.py
+│       ├── chat.py
+│       ├── merchant_profile.py
+│       ├── message.py
+│       ├── permission.py
+│       ├── role.py
+│       ├── role_permission.py
+│       ├── user.py
+│       └── user_role.py
 ├── cache_utils.py
 ├── config.py
 ├── constants/
 │   └── permissions.py
-├── create_table.py
+├── core/
+│   └── config.py
 ├── db/
 │   ├── models.py
 │   └── session.py
@@ -112,10 +113,16 @@ app/
 ├── middlewares/
 │   ├── auth.py
 │   └── global_logging.py
+├── providers/
+│   └── baseProvider.py
+├── repositories/
+│   ├── base_repository.py
+│   └── role_repository.py
 ├── schemas/
 │   ├── base_schema.py
 │   ├── chat.py
 │   ├── message.py
+│   ├── merchant_profile.py
 │   ├── permission.py
 │   ├── role.py
 │   ├── rolepermission.py
@@ -123,29 +130,31 @@ app/
 │   └── user_role.py
 ├── services/
 │   ├── assistant_service.py
+│   ├── affiliate_profile_service.py
 │   ├── auth_service.py
 │   ├── chat/
 │   │   └── chat_service.py
+│   ├── merchant_profile_service.py
 │   ├── message_service.py
 │   ├── permission_service.py
 │   ├── role_permission_service.py
 │   ├── role_service.py
 │   ├── user_role_service.py
-│   └── user_service.py
+│   ├── user_service.py
+│   └── websocket/
+│       ├── exceptions.py
+│       ├── handlers.py
+│       ├── rate_limiter.py
+│       ├── router.py
+│       ├── schemas.py
+│       └── services.py
 ├── static/
 │   ├── chat-test.css
 │   ├── chat-test.html
 │   └── chat-test.js
 ├── utils/
 │   └── cache.py
-├── utils.py
-└── websocket/
-    ├── exceptions.py
-    ├── handlers.py
-    ├── rate_limiter.py
-    ├── router.py
-    ├── schemas.py
-    └── services.py
+└── utils.py
 ```
 
 ## Directory Responsibilities
@@ -160,7 +169,7 @@ Application entry point.
 - Initializes DB and Redis connections during startup
 - Exposes the `/chat-test` page
 
-### `app/api/v1/routers`
+### `app/api`
 
 Defines REST endpoints by domain:
 
@@ -172,19 +181,37 @@ Defines REST endpoints by domain:
 
 ### `app/services`
 
-Contains business logic and database operations.
+Service layer.
 
+- Contains business logic, validation, data mapping, and orchestration across repositories
 - Keeps router/controller code thin
-- Separates request handling from domain logic
+- Calls repositories for persistence and querying
+- Example: `role_service.py` validates duplicate role names and normalizes input before saving
+
+### `app/repositories`
+
+Repository layer.
+
+- Contains database access and persistence logic
+- Encapsulates SQLAlchemy queries and reusable CRUD operations
+- `base_repository.py` provides generic CRUD helpers
+- `role_repository.py` is the first module migrated to the repository layer
+
+### `app/providers`
+
+Legacy base data-access abstraction used by older services that have not been migrated yet.
+
+- `baseProvider.py` still supports several existing modules
+- New refactors should prefer `repositories` over adding more logic to `providers`
 
 ### `app/db`
 
-Data access layer.
+Infrastructure and ORM mapping layer.
 
 - `session.py`: async engine, session factory, Redis pool
 - `models.py`: ORM models for users, chats, messages, read status, roles, and permissions
 
-### `app/websocket`
+### `app/services/websocket`
 
 Contains the realtime messaging flow.
 
@@ -232,8 +259,9 @@ Client
 
 FastAPI App
   ├─ Routers
-  ├─ Services
-  ├─ SQLAlchemy Async
+  ├─ Services (business logic, validation, orchestration)
+  ├─ Repositories (query and persistence)
+  ├─ SQLAlchemy Async / ORM Models
   ├─ WebSocket Handlers
   └─ Redis Pub/Sub
 
@@ -241,6 +269,21 @@ Infrastructure
   ├─ MySQL
   └─ Redis
 ```
+
+### Request Flow by Layer
+
+The project is being organized around a layered architecture:
+
+1. `API layer` (`app/api`): receives HTTP requests, resolves dependencies, and returns response schemas.
+2. `Service layer` (`app/services`): contains business rules, validation, data transformation, and cross-module orchestration.
+3. `Repository layer` (`app/repositories`): performs database reads/writes and owns persistence logic.
+4. `Database layer` (`app/db`): defines SQLAlchemy models, sessions, and infrastructure wiring.
+
+Current migration status:
+
+- `role` already follows the new flow: `API -> Service -> Repository -> DB`
+- Some older modules still use `BaseProvider` directly inside services
+- The codebase is in a transition phase, so both patterns currently exist
 
 ## Environment Requirements
 
@@ -516,7 +559,7 @@ docker compose up -d redis
 Regenerate models from MySQL:
 
 ```bash
-sqlacodegen "mysql+pymysql://root:111111@localhost:3306/fastapi" > app/db/models.py
+sqlacodegen "mysql+pymysql://root:111111@0.0.0.0:3306/fastapi" > app/db/models.py
 ```
 
 After regenerating models, make sure [app/db/models.py](/mnt/d/fastapi-tu/fastapi/app/db/models.py) still uses the shared project `Base`.

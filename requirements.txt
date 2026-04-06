@@ -1,12 +1,14 @@
 fastapi
 uvicorn
 sqlalchemy
+asyncmy
 pymysql
 sqlacodegen
 cryptography
 python-multipart
 passlib[bcrypt]
 pyjwt
+python-jose[cryptography]
 python-dotenv
 websockets
 argon2-cffi
