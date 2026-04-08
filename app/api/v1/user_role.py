@@ -32,7 +32,6 @@ from app.services.user_role_service import (
     delete,
 )
 
-
 router = APIRouter(prefix="/user_roles", tags=["UserRoles"])
 
 
@@ -56,69 +55,6 @@ async def create_async(
     )
 
 
-# @router.get(
-#     "",
-#     response_model=ApiResponse[UserRolePagination],
-#     summary="Get user roles",
-# )
-# async def get_all_async(
-#     pagination: BaseQueryPaginationRequest = Depends(),
-#     user_id: Optional[str] = Query(default=None),
-#     role_id: Optional[str] = Query(default=None),
-#     db: AsyncSession = Depends(get_db),
-# ):
-
-#     roles = await get_all(
-#         db=db,
-#         pagination=pagination,
-#         user_id=user_id,
-#         role_id=role_id,
-#     )
-#     return success_response(
-#         data=roles,
-#         message="Thành công",
-#         message_en="Roles retrieved successfully",
-#     )
-
-
-# @router.get(
-#     "/detail",
-#     response_model=ApiResponse[UserRoleResponse],
-#     summary="Get user role by user_id and role_id",
-# )
-# async def get_by_id_async(
-#     user_id: str = Query(...),
-#     role_id: str = Query(...),
-#     db: AsyncSession = Depends(get_db),
-# ):
-
-#     role = await getById(db=db, user_id=user_id, role_id=role_id)
-#     return success_response(
-#         data=role,
-#         message="Thành công",
-#         message_en="Role retrieved successfully",
-#     )
-
-
-# @router.get(
-#     "/by-user/{user_id}",
-#     response_model=ApiResponse[list[UserRoleResponse]],
-#     summary="Get roles by user id",
-# )
-# async def get_role_by_user_id_async(
-#     user_id: str,
-#     active: Optional[bool] = Query(default=True),
-#     db: AsyncSession = Depends(get_db),
-# ):
-
-#     roles = await getRoleByUserId(db=db, user_id=user_id, active=active)
-#     return success_response(
-#         data=roles,
-#         message="Thành công",
-#         message_en="Roles retrieved successfully",
-#     )
-
-
 @router.put(
     "/{user_id}/{role_id}",
     response_model=ApiResponse[UserRoleResponse],
@@ -129,6 +65,9 @@ async def update_async(
     role_id: str,
     payload: UserRoleUpdateBody,
     db: AsyncSession = Depends(get_db),
+    permission_context: dict = Depends(
+        require_permissions(Permission.SYS_ADMIN, Permission.EDIT)
+    ),
 ):
 
     role = await update(db=db, user_id=user_id, role_id=role_id, body=payload)

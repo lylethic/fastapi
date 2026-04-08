@@ -107,9 +107,9 @@ async def delete(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_permissions(Permission.DELETE)),
 ):
-    permission = await delete_permission(db=db, id=id)
+    await delete_permission(db=db, id=id)
     return success_response(
-        data=PermissionResponse.model_validate(permission),
+        data=None,
         message="Thành công",
         message_en="Permission deleted successfully",
     )

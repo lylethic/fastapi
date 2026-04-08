@@ -1,49 +1,25 @@
 from fastapi import HTTPException
-from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Permissions
-from app.providers.baseProvider import BaseProvider
+from app.repositories.permission_repository import permission_repository
 from app.schemas.base_schema import BaseQueryPaginationRequest
 from app.schemas.permission import (
     PermissionCreateBody,
     PermissionPagination,
-    PermissionResponse,
     PermissionUpdateBody,
 )
 
 
-class PermissionService(
-    BaseProvider[
-        Permissions,
-        PermissionCreateBody,
-        PermissionUpdateBody,
-        PermissionResponse,
-        PermissionPagination,
-    ]
-):
+class PermissionService:
     def __init__(self) -> None:
-        super().__init__(
-            model=Permissions,
-            response_schema=PermissionResponse,
-            pagination_schema=PermissionPagination,
-            not_found_message="Permission not found",
-            already_exists_message="Permission already exists",
-            search_fields=["name"],
-        )
+        self.repository = permission_repository
 
     async def validate_create(
         self, db: AsyncSession, body: PermissionCreateBody
     ) -> None:
-        result = await db.execute(
-            select(Permissions).where(
-                and_(
-                    Permissions.name == body.name,
-                    Permissions.deleted.is_(False),
-                )
-            )
-        )
-        if result.scalar_one_or_none():
+        existed = await self.repository.get_by_name(db, body.name)
+        if existed:
             raise HTTPException(status_code=400, detail="Permission already exists")
 
     async def validate_update(
@@ -52,27 +28,52 @@ class PermissionService(
         if body.name is None:
             return
 
-        result = await db.execute(
-            select(Permissions).where(
-                and_(
-                    Permissions.name == body.name,
-                    Permissions.id != db_obj.id,
-                    Permissions.deleted.is_(False),
-                )
-            )
-        )
-        if result.scalar_one_or_none():
+        existed = await self.repository.get_by_name(db, body.name)
+        if existed and existed.id != db_obj.id:
             raise HTTPException(status_code=400, detail="Permission already exists")
 
-    def build_search_filters(self, search: str) -> list:
-        if not search:
-            return []
-        return [
-            or_(
-                Permissions.id == search,
-                Permissions.name.ilike(f"%{search}%"),
-            )
-        ]
+    async def create(
+        self,
+        db: AsyncSession,
+        body: PermissionCreateBody,
+        current_user: str | None = None,
+    ) -> Permissions:
+        await self.validate_create(db, body)
+        return await self.repository.create_from_data(
+            db=db,
+            data=body.model_dump(exclude_unset=True),
+            current_user=current_user,
+        )
+
+    async def get_all(
+        self, db: AsyncSession, pagination: BaseQueryPaginationRequest
+    ) -> PermissionPagination:
+        return await self.repository.get_all(db=db, pagination=pagination)
+
+    async def get_by_id(self, db: AsyncSession, id: str) -> Permissions | None:
+        return await self.repository.get_by_id(db=db, id=id)
+
+    async def update(
+        self,
+        db: AsyncSession,
+        id: str,
+        body: PermissionUpdateBody,
+        current_user: str | None = None,
+    ) -> Permissions:
+        db_obj = await self.repository.get_by_id(db=db, id=id)
+        if not db_obj:
+            raise HTTPException(status_code=404, detail="Permission not found")
+
+        await self.validate_update(db, db_obj, body)
+        return await self.repository.update_from_data(
+            db=db,
+            db_obj=db_obj,
+            update_data=body.model_dump(exclude_unset=True),
+            current_user=current_user,
+        )
+
+    async def soft_delete(self, db: AsyncSession, id: str) -> Permissions:
+        return await self.repository.soft_delete(db=db, id=id)
 
 
 permission_service = PermissionService()
@@ -81,7 +82,7 @@ permission_service = PermissionService()
 async def create_permission(
     db: AsyncSession, body: PermissionCreateBody, current_user: str | None = None
 ) -> Permissions:
-    return await permission_service.post(db=db, body=body, current_user=current_user)
+    return await permission_service.create(db=db, body=body, current_user=current_user)
 
 
 async def get_permission(

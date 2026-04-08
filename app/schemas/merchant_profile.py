@@ -1,9 +1,6 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from datetime import datetime
+from pydantic import BaseModel
+from typing import Optional
 from app.schemas.base_schema import BaseLogEntity, BaseModelPagination
-
-from app.constants.merchant_profile_enum import BusinessType
 
 
 class MerchantProfilesCreateBody(BaseModel):

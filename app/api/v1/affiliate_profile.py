@@ -8,30 +8,30 @@ from app.db.session import get_db
 
 from app.schemas.base_schema import BaseQueryPaginationRequest
 
-from app.schemas.merchant_profile import (
-    MerchantProfilesCreateBody,
-    MerchantProfilesPagination,
-    MerchantProfilesResponse,
-    MerchantProfilesUpdateBody,
+from app.schemas.affiliate_profiles import (
+    AffiliateProfileCreateBody,
+    AffiliateProfilePagination,
+    AffiliateProfileResponse,
+    AffiliateProfileUpdateBody,
 )
 
-from app.services.merchant_profile_service import service, get_with_extend_user
+from app.services.affiliate_profile_service import service, get_with_extend_user
 from app.services.assistant_service import get_current_user, require_permissions
 
-router = APIRouter(prefix="/merchant_profiles", tags=["MerchantProfiles"])
+router = APIRouter(prefix="/affiliate_profiles", tags=["AffiliateProfiles"])
 
 
-@router.get("/{id}", summary="Get merchant profile by id")
+@router.get("/{id}", summary="Get affiliate profile by id")
 async def get_by_id_async(id: str, db: AsyncSession = Depends(get_db)):
     result = await get_with_extend_user(db=db, id=id)
     return success_response(
         data=result,
         message="Thành công",
-        message_en="Merchant profile retrieved successfully",
+        message_en="Affiliate profile retrieved successfully",
     )
 
 
-@router.delete("/{id}", summary="Delete merchant profile")
+@router.delete("/{id}", summary="Delete affiliate profile")
 async def delete(
     id: str,
     db: AsyncSession = Depends(get_db),
@@ -39,7 +39,7 @@ async def delete(
         require_permissions(Permission.SYS_ADMIN, Permission.DELETE)
     ),
 ):
-    await service.soft_delete(db=db, id=id)
+    await service.delete(db=db, id=id)
     return success_response(
         data=None,
         message="Thành công",
@@ -49,48 +49,48 @@ async def delete(
 
 @router.put(
     "/{id}",
-    response_model=ApiResponse[MerchantProfilesResponse],
-    summary="Update merchant profile",
+    response_model=ApiResponse[AffiliateProfileResponse],
+    summary="Update affiliate profile",
 )
 async def update_async(
     id: str,
-    payload: MerchantProfilesUpdateBody,
+    payload: AffiliateProfileUpdateBody,
     db: AsyncSession = Depends(get_db),
 ):
     result = await service.update(db=db, id=id, body=payload)
     return success_response(
-        data=MerchantProfilesResponse.model_validate(result),
+        data=AffiliateProfileResponse.model_validate(result),
         message="Thành công",
-        message_en="Merchant profile updated successfully",
+        message_en="Affiliate profile updated successfully",
     )
 
 
 @router.get(
     "",
-    response_model=ApiResponse[MerchantProfilesPagination],
-    summary="Get merchant profiles",
+    response_model=ApiResponse[AffiliateProfilePagination],
+    summary="Get affiliate profiles",
 )
 async def get_all_async(
     db: AsyncSession = Depends(get_db),
     pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    roles = await service.get_all(db=db, pagination=pagination)
+    profiles = await service.get_all(db=db, pagination=pagination)
     return success_response(
-        data=roles,
+        data=profiles,
         message="Thành công",
-        message_en="Roles retrieved successfully",
+        message_en="Affiliate profiles retrieved successfully",
     )
 
 
-@router.post("", summary="Create merchant profile")
+@router.post("", summary="Create affiliate profile")
 async def post(
-    payload: MerchantProfilesCreateBody,
+    payload: AffiliateProfileCreateBody,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     result = await service.post(db=db, body=payload, current_user=current_user["id"])
     return success_response(
-        data=MerchantProfilesResponse.model_validate(result),
+        data=AffiliateProfileResponse.model_validate(result),
         message="Thành công",
-        message_en="Merchant profile created successfully",
+        message_en="Affiliate profile created successfully",
     )
