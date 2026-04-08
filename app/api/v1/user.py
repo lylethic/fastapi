@@ -31,7 +31,6 @@ from app.services.user_service import (
     get_user_detail,
 )
 
-
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
@@ -91,7 +90,13 @@ async def get_user_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
     status_code=status.HTTP_200_OK,
     summary="Create user",
 )
-async def create_user_api(payload: UserCreateBody, db: AsyncSession = Depends(get_db)):
+async def create_user_api(
+    payload: UserCreateBody,
+    db: AsyncSession = Depends(get_db),
+    permission_context: dict = Depends(
+        require_permissions(Permission.SYS_ADMIN, Permission.WRITE)
+    ),
+):
     user = await create_user(db=db, body=payload)
 
     return success_response(
@@ -123,7 +128,7 @@ async def update(
 async def delete(
     id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(require_permissions(Permission.DELETE)),
+    permission_context: dict = Depends(require_permissions(Permission.DELETE)),
 ):
 
     data = await delete_user(db=db, id=id)

@@ -20,7 +20,6 @@ from app.services.role_permission_service import (
 )
 from app.schemas.base_schema import BaseQueryPaginationRequest
 
-
 router = APIRouter(prefix="/role-permissions", tags=["Role Permissions"])
 
 
@@ -120,13 +119,13 @@ async def delete_role_permission_api(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_permissions(Permission.DELETE)),
 ):
-    role_permission = await delete_role_permission(
+    await delete_role_permission(
         db=db,
         role_id=role_id,
         permission_id=permission_id,
     )
     return success_response(
-        data=RolePermissionResponse.model_validate(role_permission),
+        data=None,
         message="Thành công",
         message_en="Role permission deleted successfully",
     )
