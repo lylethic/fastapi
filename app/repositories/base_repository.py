@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from typing import Any, Generic, List, Optional, TypeVar
 
 from fastapi import HTTPException
-
 from pydantic import BaseModel
 
 from sqlalchemy import func, or_, select
@@ -23,24 +22,12 @@ from app.schemas.base_schema import BaseQueryPaginationRequest
 
 ModelType = TypeVar("ModelType")
 
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
-
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
-
 ResponseSchemaType = TypeVar("ResponseSchemaType", bound=BaseModel)
 
 PaginationSchemaType = TypeVar("PaginationSchemaType", bound=BaseModel)
 
 
-class BaseRepository(
-    Generic[
-        ModelType,
-        CreateSchemaType,
-        UpdateSchemaType,
-        ResponseSchemaType,
-        PaginationSchemaType,
-    ]
-):
+class BaseRepository(Generic[ModelType, ResponseSchemaType, PaginationSchemaType]):
     """Base repository for CRUD operations."""
 
     def __init__(
@@ -63,22 +50,6 @@ class BaseRepository(
         self.default_order_field = default_order_field
 
     # =========================
-    # Hooks for child class override
-    # =========================
-    async def validate_create(self, db: AsyncSession, body: CreateSchemaType) -> None:
-        return None
-
-    async def validate_update(
-        self, db: AsyncSession, db_obj: ModelType, body: UpdateSchemaType
-    ) -> None:
-        return None
-
-    def map_create_data(self, body: CreateSchemaType) -> dict[str, Any]:
-        return body.model_dump(exclude_unset=True)
-
-    def map_update_data(self, body: UpdateSchemaType) -> dict[str, Any]:
-        return body.model_dump(exclude_unset=True)
-
     def base_filters(self) -> list[Any]:
         filters: list[Any] = []
         if hasattr(self.model, "deleted"):
@@ -170,18 +141,46 @@ class BaseRepository(
     async def post(
         self,
         db: AsyncSession,
-        body: CreateSchemaType,
+        body: ModelType,
         current_user: str | None = None,
     ) -> ModelType:
-        """Create new item"""
-        await self.validate_create(db, body)
-
-        data = self.map_create_data(body)
-        return await self.create_from_data(
+        """Create a new record from an ORM model instance."""
+        return await self.create_from_model(
             db=db,
-            data=data,
+            db_obj=body,
             current_user=current_user,
         )
+
+    async def create_from_model(
+        self,
+        db: AsyncSession,
+        db_obj: ModelType,
+        current_user: str | None = None,
+    ) -> ModelType:
+        """Persist a prepared ORM model instance."""
+
+        if hasattr(db_obj, "id") and getattr(db_obj, "id", None) in (None, ""):
+            db_obj.id = str(uuid.uuid7())
+
+        now = datetime.now(timezone.utc)
+        if hasattr(db_obj, "created") and getattr(db_obj, "created", None) is None:
+            db_obj.created = now
+
+        if current_user is not None and hasattr(db_obj, "created_by"):
+            db_obj.created_by = current_user
+
+        db.add(db_obj)
+
+        try:
+            await db.commit()
+            await db.refresh(db_obj)
+            return db_obj
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(
+                status_code=400,
+                detail=self.already_exists_message,
+            )
 
     async def create_from_data(
         self,
@@ -191,54 +190,68 @@ class BaseRepository(
     ) -> ModelType:
         """Create new item from prepared data"""
 
-        db_obj = self.model(
-            id=str(uuid.uuid7()),
-            **data,
+        db_obj = self.model(**data)
+        return await self.create_from_model(
+            db=db,
+            db_obj=db_obj,
+            current_user=current_user,
         )
-
-        now = datetime.now(timezone.utc)
-        if hasattr(db_obj, "created"):
-            db_obj.created = now
-
-        if current_user is not None and hasattr(db_obj, "created_by"):
-            db_obj.created_by = current_user
-        db.add(db_obj)
-
-        try:
-            await db.commit()
-            await db.refresh(db_obj)
-
-            return db_obj
-
-        except IntegrityError:
-            await db.rollback()
-            raise HTTPException(
-                status_code=400,
-                detail=self.already_exists_message,
-            )
 
     async def update(
         self,
         db: AsyncSession,
         id: str,
-        body: UpdateSchemaType,
+        body: ModelType,
         current_user: str | None = None,
+        fields: set[str] | None = None,
     ) -> ModelType:
-        """Update item"""
+        """Update a record from an ORM model instance."""
         db_obj = await self.get_by_id(db, id)
 
         if not db_obj:
             raise HTTPException(status_code=404, detail=self.not_found_message)
 
-        await self.validate_update(db, db_obj, body)
-
-        update_data = self.map_update_data(body)
+        update_data = self.model_to_data(
+            body=body,
+            fields=fields,
+            exclude_none=fields is None,
+        )
         return await self.update_from_data(
             db=db,
             db_obj=db_obj,
             update_data=update_data,
             current_user=current_user,
         )
+
+    def model_to_data(
+        self,
+        body: ModelType,
+        *,
+        fields: set[str] | None = None,
+        exclude_none: bool = False,
+    ) -> dict[str, Any]:
+        excluded_fields = {
+            "id",
+            "created",
+            "created_by",
+            "updated",
+            "updated_by",
+        }
+        data: dict[str, Any] = {}
+
+        for column in self.model.__table__.columns.keys():
+            if column in excluded_fields:
+                continue
+            if fields is not None and column not in fields:
+                continue
+
+            value = getattr(body, column, None)
+            if exclude_none and value is None:
+                continue
+
+            data[column] = value
+
+        return data
 
     async def update_from_data(
         self,

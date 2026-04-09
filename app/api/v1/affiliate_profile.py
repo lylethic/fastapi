@@ -15,7 +15,7 @@ from app.schemas.affiliate_profiles import (
     AffiliateProfileUpdateBody,
 )
 
-from app.services.affiliate_profile_service import service, get_with_extend_user
+from app.services.affiliate_profile_service import affiliate_profile_service
 from app.services.assistant_service import get_current_user, require_permissions
 
 router = APIRouter(prefix="/affiliate_profiles", tags=["AffiliateProfiles"])
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/affiliate_profiles", tags=["AffiliateProfiles"])
 
 @router.get("/{id}", summary="Get affiliate profile by id")
 async def get_by_id_async(id: str, db: AsyncSession = Depends(get_db)):
-    result = await get_with_extend_user(db=db, id=id)
+    result = await affiliate_profile_service.get_with_extend_user(db=db, id=id)
     return success_response(
         data=result,
         message="Thành công",
@@ -39,7 +39,7 @@ async def delete(
         require_permissions(Permission.SYS_ADMIN, Permission.DELETE)
     ),
 ):
-    await service.delete(db=db, id=id)
+    await affiliate_profile_service.delete(db=db, id=id)
     return success_response(
         data=None,
         message="Thành công",
@@ -57,7 +57,7 @@ async def update_async(
     payload: AffiliateProfileUpdateBody,
     db: AsyncSession = Depends(get_db),
 ):
-    result = await service.update(db=db, id=id, body=payload)
+    result = await affiliate_profile_service.update(db=db, id=id, body=payload)
     return success_response(
         data=AffiliateProfileResponse.model_validate(result),
         message="Thành công",
@@ -74,7 +74,7 @@ async def get_all_async(
     db: AsyncSession = Depends(get_db),
     pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    profiles = await service.get_all(db=db, pagination=pagination)
+    profiles = await affiliate_profile_service.get_all(db=db, pagination=pagination)
     return success_response(
         data=profiles,
         message="Thành công",
@@ -88,7 +88,11 @@ async def post(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    result = await service.post(db=db, body=payload, current_user=current_user["id"])
+    result = await affiliate_profile_service.create(
+        db=db,
+        body=payload,
+        current_user=current_user["id"],
+    )
     return success_response(
         data=AffiliateProfileResponse.model_validate(result),
         message="Thành công",

@@ -77,34 +77,3 @@ class PermissionService:
 
 
 permission_service = PermissionService()
-
-
-async def create_permission(
-    db: AsyncSession, body: PermissionCreateBody, current_user: str | None = None
-) -> Permissions:
-    return await permission_service.create(db=db, body=body, current_user=current_user)
-
-
-async def get_permission(
-    db: AsyncSession, pagination: BaseQueryPaginationRequest
-) -> PermissionPagination:
-    return await permission_service.get_all(db=db, pagination=pagination)
-
-
-async def get_permission_by_id(db: AsyncSession, id: str) -> Permissions | None:
-    return await permission_service.get_by_id(db=db, id=id)
-
-
-async def update_permission(
-    db: AsyncSession,
-    id: str,
-    body: PermissionUpdateBody,
-    current_user: str | None = None,
-) -> Permissions:
-    return await permission_service.update(
-        db=db, id=id, body=body, current_user=current_user
-    )
-
-
-async def delete_permission(db: AsyncSession, id: str) -> Permissions:
-    return await permission_service.soft_delete(db=db, id=id)

@@ -7,10 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import MerchantProfiles
 from app.repositories.base_repository import BaseRepository
 from app.schemas.merchant_profile import (
-    MerchantProfilesCreateBody,
     MerchantProfilesPagination,
     MerchantProfilesResponse,
-    MerchantProfilesUpdateBody,
 )
 
 
@@ -28,8 +26,6 @@ WHERE mp.id = :id
 class MerchantProfileRepository(
     BaseRepository[
         MerchantProfiles,
-        MerchantProfilesCreateBody,
-        MerchantProfilesUpdateBody,
         MerchantProfilesResponse,
         MerchantProfilesPagination,
     ]

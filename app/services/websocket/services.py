@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Dict
 from uuid import UUID
-from uuid import uuid4
+import uuid
 
 import redis.asyncio as aioredis
 from fastapi import WebSocket
@@ -130,7 +130,7 @@ async def mark_last_read_message(
     read_status: ReadStatus | None = result.scalar_one_or_none()
 
     if not read_status:
-        read_status = ReadStatus(id=str(uuid4()), user_id=user_id, chat_id=chat_id)
+        read_status = ReadStatus(id=str(uuid.uuid7()), user_id=user_id, chat_id=chat_id)
         read_status.last_read_message_id = last_read_message_id
     else:
         if read_status.last_read_message_id >= last_read_message_id:

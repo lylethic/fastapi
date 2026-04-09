@@ -59,7 +59,7 @@ class AffiliateProfilesService:
 
         return data
 
-    async def post(
+    async def create(
         self,
         db: AsyncSession,
         body: AffiliateProfileCreateBody,
@@ -78,8 +78,13 @@ class AffiliateProfilesService:
     ) -> AffiliateProfilePagination:
         return await self.repository.get_all(db, pagination)
 
-    async def get(self, db: AsyncSession, id: str) -> AffiliateProfiles | None:
+    async def get_by_id(self, db: AsyncSession, id: str) -> AffiliateProfiles | None:
         return await self.repository.get_by_id(db, id)
+
+    async def get_with_extend_user(
+        self, db: AsyncSession, id: str
+    ) -> AffiliateProfileResponse:
+        return await self.repository.get_with_extend_user(db=db, id=id)
 
     async def update(
         self,
@@ -108,8 +113,4 @@ class AffiliateProfilesService:
         return await self.repository.soft_delete(db, id)
 
 
-async def get_with_extend_user(db: AsyncSession, id: str) -> AffiliateProfileResponse:
-    return await affiliate_profile_repository.get_with_extend_user(db=db, id=id)
-
-
-service = AffiliateProfilesService()
+affiliate_profile_service = AffiliateProfilesService()

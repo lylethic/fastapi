@@ -10,6 +10,7 @@ from app.api.v1.chat import router as chat_router
 from app.api.v1.message import router as message_router
 from app.api.v1.merchant_profile import router as merchant_profile_router
 from app.api.v1.affiliate_profile import router as affiliate_profile_router
+from app.api.v1.affiliate_campaign import router as affiliate_campaign_router
 
 # Websocket router
 from app.services.websocket.router import websocket_router
@@ -26,6 +27,10 @@ api_router.include_router(
 
 api_router.include_router(
     affiliate_profile_router, dependencies=protected_route_dependencies
+)
+
+api_router.include_router(
+    affiliate_campaign_router, dependencies=protected_route_dependencies
 )
 
 # Auth

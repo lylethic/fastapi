@@ -4,18 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import Permissions
 from app.repositories.base_repository import BaseRepository
 from app.schemas.permission import (
-    PermissionCreateBody,
     PermissionPagination,
     PermissionResponse,
-    PermissionUpdateBody,
 )
 
 
 class PermissionRepository(
     BaseRepository[
         Permissions,
-        PermissionCreateBody,
-        PermissionUpdateBody,
         PermissionResponse,
         PermissionPagination,
     ]

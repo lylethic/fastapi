@@ -21,15 +21,7 @@ from app.schemas.base_schema import BaseQueryPaginationRequest
 
 from app.services.assistant_service import get_current_user, require_permissions
 
-from app.services.user_service import (
-    create_user,
-    get_user,
-    get_user_by_id,
-    update_user,
-    delete_user,
-    uploadImage,
-    get_user_detail,
-)
+from app.services.user_service import user_service as service
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -43,7 +35,7 @@ async def get_user_api(
     db: AsyncSession = Depends(get_db),
     pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    data = await get_user(db=db, pagination=pagination)
+    data = await service.get_all(db=db, pagination=pagination)
     return success_response(
         data=data,
         message="Thành công",
@@ -61,7 +53,7 @@ async def get_my_detail(
     db: AsyncSession = Depends(get_db),
 ):
 
-    data = await get_user_detail(db=db, user_id=current_user["id"])
+    data = await service.get_user_detail(db=db, user_id=current_user["id"])
     return success_response(
         data=UserPermissionRoleResponse.model_validate(data),
         message="Thành công",
@@ -76,7 +68,7 @@ async def get_my_detail(
 )
 async def get_user_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
 
-    data = await get_user_detail(db=db, user_id=id)
+    data = await service.get_user_detail(db=db, user_id=id)
     return success_response(
         data=UserPermissionRoleResponse.model_validate(data),
         message="Thành công",
@@ -97,7 +89,7 @@ async def create_user_api(
         require_permissions(Permission.SYS_ADMIN, Permission.WRITE)
     ),
 ):
-    user = await create_user(db=db, body=payload)
+    user = await service.create(db=db, body=payload)
 
     return success_response(
         data=UserResponse.model_validate(user),
@@ -114,7 +106,7 @@ async def update(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    data = await update_user(
+    data = await service.update(
         db=db, id=id, body=payload, current_user=current_user["id"]
     )
     return success_response(
@@ -131,7 +123,7 @@ async def delete(
     permission_context: dict = Depends(require_permissions(Permission.DELETE)),
 ):
 
-    data = await delete_user(db=db, id=id)
+    data = await service.delete(db=db, id=id)
     return success_response(
         data=UserResponse.model_validate(data),
         message="Thành công",
@@ -147,7 +139,7 @@ async def delete(
 async def upload_image(
     id: str, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)
 ):
-    data = await uploadImage(db=db, id=id, file=file)
+    data = await service.uploadImage(db=db, id=id, file=file)
 
     if not data:
         return success_response(

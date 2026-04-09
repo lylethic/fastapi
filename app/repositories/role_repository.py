@@ -3,10 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Roles
 from app.schemas.role import (
-    RoleCreateBody,
     RolePagination,
     RoleResponse,
-    RoleUpdateBody,
 )
 from app.repositories.base_repository import BaseRepository
 
@@ -14,8 +12,6 @@ from app.repositories.base_repository import BaseRepository
 class RoleRepository(
     BaseRepository[
         Roles,
-        RoleCreateBody,
-        RoleUpdateBody,
         RoleResponse,
         RolePagination,
     ]

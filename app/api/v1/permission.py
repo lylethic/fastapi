@@ -11,15 +11,9 @@ from app.schemas.permission import (
     PermissionUpdateBody,
 )
 from app.services.assistant_service import require_permissions
-from app.services.permission_service import (
-    create_permission,
-    delete_permission,
-    get_permission,
-    get_permission_by_id,
-    update_permission,
-)
 from app.schemas.base_schema import BaseQueryPaginationRequest
 from app.services.assistant_service import get_current_user
+from app.services.permission_service import permission_service
 
 router = APIRouter(prefix="/permissions", tags=["Permissions"])
 
@@ -38,7 +32,7 @@ async def create_permission_api(
         require_permissions(Permission.SYS_ADMIN, Permission.WRITE)
     ),
 ):
-    permission = await create_permission(
+    permission = await permission_service.create(
         db=db, body=payload, current_user=current_user["id"]
     )
     return success_response(
@@ -58,7 +52,7 @@ async def get_permission_api(
     db: AsyncSession = Depends(get_db),
     pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    permissions = await get_permission(db=db, pagination=pagination)
+    permissions = await permission_service.get_all(db=db, pagination=pagination)
     return success_response(
         data=permissions,
         message="Thành công",
@@ -68,7 +62,7 @@ async def get_permission_api(
 
 @router.get("/{id}", summary="Get permission by id")
 async def get_permission_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
-    permission = await get_permission_by_id(db=db, id=id)
+    permission = await permission_service.get_by_id(db=db, id=id)
     if not permission:
         return success_response(
             is_success=False,
@@ -91,7 +85,7 @@ async def update(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    permission = await update_permission(
+    permission = await permission_service.update(
         db=db, id=id, body=payload, current_user=current_user["id"]
     )
     return success_response(
@@ -107,7 +101,7 @@ async def delete(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_permissions(Permission.DELETE)),
 ):
-    await delete_permission(db=db, id=id)
+    await permission_service.soft_delete(db=db, id=id)
     return success_response(
         data=None,
         message="Thành công",

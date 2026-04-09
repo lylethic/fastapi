@@ -1,22 +1,22 @@
 from datetime import datetime
 
-from pydantic import UUID4, BaseModel, field_validator
+from pydantic import UUID7, BaseModel, field_validator
 
 from app.config import ENVIRONMENT, APP_HOST
 from app.db.models import ChatChatType as ChatType
 
 
 class ChatSchema(BaseModel):
-    guid: UUID4
+    guid: UUID7
     chat_type: ChatType
 
 
 class CreateDirectChatSchema(BaseModel):
-    recipient_user_guid: UUID4
+    recipient_user_guid: UUID7
 
 
 class UserSchema(BaseModel):
-    guid: UUID4
+    guid: UUID7
     name: str
     username: str
     profile_pic: str | None
@@ -34,7 +34,7 @@ class UserSchema(BaseModel):
 
 
 class MessageSchema(BaseModel):
-    guid: UUID4
+    guid: UUID7
     content: str
     created: datetime
     user: UserSchema
@@ -44,7 +44,7 @@ class MessageSchema(BaseModel):
 
 
 class DisplayDirectChatSchema(BaseModel):
-    guid: UUID4
+    guid: UUID7
     chat_type: ChatType
     created: datetime
     updated: datetime | None = None
@@ -55,7 +55,7 @@ class DisplayDirectChatSchema(BaseModel):
 
 
 class GetDirectChatSchema(BaseModel):
-    chat_guid: UUID4
+    chat_guid: UUID7
     chat_type: ChatType
     created: datetime
     updated: datetime | None = None
@@ -72,18 +72,18 @@ class GetDirectChatsSchema(BaseModel):
 
 
 class LastReadMessageSchema(BaseModel):
-    guid: UUID4
+    guid: UUID7
     content: str
     created: datetime
 
 
 class GetMessageSchema(BaseModel):
-    message_guid: UUID4
-    user_guid: UUID4
+    message_guid: UUID7
+    user_guid: UUID7
     profile_pic: str | None = None
     name: str
     username: str
-    chat_guid: UUID4
+    chat_guid: UUID7
     content: str
     created: datetime
     is_read: bool | None = False

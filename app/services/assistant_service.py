@@ -5,7 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.services.user_service import get_role_permission
+from app.services.user_service import user_service as service
 
 security = HTTPBearer(
     scheme_name="JWT Authorization",
@@ -37,7 +37,7 @@ async def get_current_user(
         )
 
     user_id = user["id"]
-    role_permission = await get_role_permission(db=db, user_id=user_id)
+    role_permission = await service.get_role_permission(db=db, user_id=user_id)
     permissions = {
         permission.strip().upper()
         for permission in role_permission.get("permissions", [])

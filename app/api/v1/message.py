@@ -11,14 +11,7 @@ from app.schemas.message import (
     MessageUpdateBody,
 )
 from app.services.assistant_service import get_current_user
-from app.services.message_service import (
-    create_message,
-    delete_message,
-    get_message_by_id,
-    get_messages_by_chat_id,
-    get_messages,
-    update_message,
-)
+from app.services.message_service import message_service
 
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
@@ -35,7 +28,9 @@ async def create_message_api(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    data = await create_message(db=db, body=payload, current_user=current_user["id"])
+    data = await message_service.create(
+        db=db, body=payload, current_user=current_user["id"]
+    )
     return success_response(
         data=MessageResponse.model_validate(data),
         message="Thành công",
@@ -53,7 +48,7 @@ async def get_messages_api(
     db: AsyncSession = Depends(get_db),
     pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    data = await get_messages(db=db, pagination=pagination)
+    data = await message_service.get_all(db=db, pagination=pagination)
     return success_response(
         data=data,
         message="Thành công",
@@ -71,7 +66,9 @@ async def get_messages_by_chat_id_api(
     db: AsyncSession = Depends(get_db),
     pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    data = await get_messages_by_chat_id(db=db, chat_id=chat_id, pagination=pagination)
+    data = await message_service.get_by_chat_id(
+        db=db, chat_id=chat_id, pagination=pagination
+    )
     return success_response(
         data=data,
         message="Thành công",
@@ -85,7 +82,7 @@ async def get_messages_by_chat_id_api(
     summary="Get message by id",
 )
 async def get_message_by_id_api(id: str, db: AsyncSession = Depends(get_db)):
-    data = await get_message_by_id(db=db, id=id)
+    data = await message_service.get_by_id(db=db, id=id)
     if not data:
         return success_response(
             is_success=False,
@@ -112,7 +109,7 @@ async def update_message_api(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    data = await update_message(
+    data = await message_service.update(
         db=db, id=id, body=payload, current_user=current_user["id"]
     )
     return success_response(
@@ -131,7 +128,7 @@ async def delete_message_api(
     id: str,
     db: AsyncSession = Depends(get_db),
 ):
-    data = await delete_message(db=db, id=id)
+    data = await message_service.soft_delete(db=db, id=id)
     return success_response(
         data=MessageResponse.model_validate(data),
         message="Thành công",

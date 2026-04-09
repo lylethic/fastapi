@@ -1,5 +1,9 @@
 from fastapi import FastAPI
-from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from fastapi.openapi.docs import (
+    get_swagger_ui_html,
+    get_redoc_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
 from fastapi.responses import HTMLResponse
 
 
@@ -7,7 +11,7 @@ class CustomSwaggerUI:
     def __init__(
         self,
         app: FastAPI,
-        title: str = "Chat Service API",
+        title: str = "Affiliate Service API",
         swagger_favicon_url: str = "/static/favicon.png",
     ):
         self.app = app
@@ -27,15 +31,14 @@ class CustomSwaggerUI:
                     "docExpansion": "none",
                     "persistAuthorization": True,
                     "displayRequestDuration": True,
+                    "tagsSorter": "alpha",
+                    "operationsSorter": "alpha",
                 },
             )
 
         @self.app.get(self.app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
         async def swagger_ui_redirect():
-            return get_swagger_ui_html(
-                openapi_url=self.app.openapi_url,
-                title=f"{self.title} - OAuth2 Redirect",
-            )
+            return get_swagger_ui_oauth2_redirect_html()
 
         @self.app.get("/redoc", include_in_schema=False)
         async def redoc_ui() -> HTMLResponse:

@@ -85,9 +85,8 @@ class RoleService:
     async def soft_delete(self, db: AsyncSession, id: str) -> Roles:
         return await self.repository.soft_delete(db=db, id=id)
 
+    async def get_by_name(self, db: AsyncSession, name: str) -> Roles | None:
+        return await self.repository.get_by_name(db=db, name=name)
+
 
 role_service = RoleService()
-
-
-async def get_role_by_name(db: AsyncSession, name: str) -> Roles | None:
-    return await role_service.repository.get_by_name(db=db, name=name)

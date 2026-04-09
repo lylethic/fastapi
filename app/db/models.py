@@ -80,6 +80,12 @@ class AffiliatePayoutRequestsStatus(str, enum.Enum):
     REJECTED = 'rejected'
 
 
+class AffiliateProfilesAffiliateLevel(str, enum.Enum):
+    F0 = 'F0'
+    F1 = 'F1'
+    F2 = 'F2'
+
+
 class AffiliateProfilesPaymentMethod(str, enum.Enum):
     BANK_TRANSFER = 'bank_transfer'
     EWALLET = 'ewallet'
@@ -204,6 +210,7 @@ class AffiliateProfiles(Base):
     created: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     deleted: Mapped[int] = mapped_column(TINYINT(1), nullable=False, server_default=text("'0'"))
     active: Mapped[int] = mapped_column(TINYINT(1), nullable=False, server_default=text("'1'"))
+    affiliate_level: Mapped[AffiliateProfilesAffiliateLevel] = mapped_column(Enum(AffiliateProfilesAffiliateLevel, values_callable=lambda cls: [member.value for member in cls]), nullable=False, server_default=text("'F2'"))
     display_name: Mapped[Optional[str]] = mapped_column(String(255, 'utf8mb4_unicode_ci'))
     traffic_source: Mapped[Optional[str]] = mapped_column(String(100, 'utf8mb4_unicode_ci'))
     social_channel: Mapped[Optional[str]] = mapped_column(String(255, 'utf8mb4_unicode_ci'))
@@ -216,6 +223,7 @@ class AffiliateProfiles(Base):
     updated: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
     created_by: Mapped[Optional[str]] = mapped_column(CHAR(36, 'utf8mb4_unicode_ci'))
     updated_by: Mapped[Optional[str]] = mapped_column(CHAR(36, 'utf8mb4_unicode_ci'))
+    parent_affiliate_id: Mapped[Optional[str]] = mapped_column(CHAR(36, 'utf8mb4_unicode_ci'))
 
     user: Mapped['Users'] = relationship('Users', back_populates='affiliate_profiles')
     affiliate_payout_requests: Mapped[list['AffiliatePayoutRequests']] = relationship('AffiliatePayoutRequests', back_populates='affiliate')

@@ -1,5 +1,5 @@
 import json
-from uuid import uuid4
+import uuid
 
 from fastapi import HTTPException
 from sqlalchemy import and_, or_, select, text
@@ -8,13 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import Users
 from app.repositories.base_repository import BaseRepository
 from app.schemas.user import (
-    UserCreateBody,
     UserPagination,
     UserPermissionRoleResponse,
     UserResponse,
-    UserUpdateBody,
 )
-
 
 QUERY_USER_WITH_ROLES_PERMISSIONS = """
 SELECT
@@ -129,8 +126,6 @@ WHERE u.id = :user_id
 class UserRepository(
     BaseRepository[
         Users,
-        UserCreateBody,
-        UserUpdateBody,
         UserResponse,
         UserPagination,
     ]
@@ -209,12 +204,12 @@ class UserRepository(
         )
         return result.scalar_one_or_none()
 
-    async def create_user_record(self, db: AsyncSession, data: dict) -> Users:
-        user = Users(
-            id=str(uuid4()),
-            guid=str(uuid4()),
-            **data,
-        )
+    async def create_user_record(self, db: AsyncSession, user: Users) -> Users:
+        if not user.id:
+            user.id = str(uuid.uuid7())
+        if not user.guid:
+            user.guid = str(uuid.uuid7())
+
         db.add(user)
         await db.flush()
         return user

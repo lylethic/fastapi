@@ -7,10 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import AffiliateProfiles
 from app.repositories.base_repository import BaseRepository
 from app.schemas.affiliate_profiles import (
-    AffiliateProfileCreateBody,
     AffiliateProfilePagination,
     AffiliateProfileResponse,
-    AffiliateProfileUpdateBody,
 )
 
 QUERY_EXTEND_USER = """
@@ -27,8 +25,6 @@ WHERE ap.id = :id
 class AffiliateProfileRepository(
     BaseRepository[
         AffiliateProfiles,
-        AffiliateProfileCreateBody,
-        AffiliateProfileUpdateBody,
         AffiliateProfileResponse,
         AffiliateProfilePagination,
     ]

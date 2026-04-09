@@ -23,14 +23,7 @@ from app.schemas.user_role import (
 
 from app.services.assistant_service import require_permissions
 
-from app.services.user_role_service import (
-    create,
-    get_all,
-    getById,
-    getRoleByUserId,
-    update,
-    delete,
-)
+from app.services.user_role_service import user_role_service
 
 router = APIRouter(prefix="/user_roles", tags=["UserRoles"])
 
@@ -46,7 +39,7 @@ async def create_async(
     db: AsyncSession = Depends(get_db),
 ):
 
-    role = await create(db=db, body=payload)
+    role = await user_role_service.create(db=db, body=payload)
     return success_response(
         data=UserRoleResponse.model_validate(role),
         message="Thành công",
@@ -70,7 +63,9 @@ async def update_async(
     ),
 ):
 
-    role = await update(db=db, user_id=user_id, role_id=role_id, body=payload)
+    role = await user_role_service.update_by_keys(
+        db=db, user_id=user_id, role_id=role_id, body=payload
+    )
     return success_response(
         data=UserRoleResponse.model_validate(role),
         message="Thành công",
@@ -90,7 +85,9 @@ async def delete_async(
     current_user: dict = Depends(require_permissions(Permission.DELETE)),
 ):
 
-    result = await delete(db=db, user_id=user_id, role_id=role_id)
+    result = await user_role_service.soft_delete_by_keys(
+        db=db, user_id=user_id, role_id=role_id
+    )
     return success_response(
         data=result,
         message="Thành công",

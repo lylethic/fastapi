@@ -59,7 +59,7 @@ class MerchantProfilesService:
 
         return data
 
-    async def post(
+    async def create(
         self,
         db: AsyncSession,
         body: MerchantProfilesCreateBody,
@@ -79,6 +79,11 @@ class MerchantProfilesService:
 
     async def get_by_id(self, db: AsyncSession, id: str) -> MerchantProfiles | None:
         return await self.repository.get_by_id(db=db, id=id)
+
+    async def get_with_extend_user(
+        self, db: AsyncSession, id: str
+    ) -> MerchantProfilesResponse:
+        return await self.repository.get_with_extend_user(db=db, id=id)
 
     async def update(
         self,
@@ -101,9 +106,4 @@ class MerchantProfilesService:
     async def soft_delete(self, db: AsyncSession, id: str) -> MerchantProfiles:
         return await self.repository.soft_delete(db=db, id=id)
 
-
-async def get_with_extend_user(db: AsyncSession, id: str) -> MerchantProfilesResponse:
-    return await merchant_profile_repository.get_with_extend_user(db=db, id=id)
-
-
-service = MerchantProfilesService()
+merchant_profile_service = MerchantProfilesService()

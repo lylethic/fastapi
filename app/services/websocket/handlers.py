@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
-from uuid import uuid4
+import uuid
 
 import redis.asyncio as aioredis
 from fastapi import WebSocket
@@ -30,7 +30,6 @@ from app.services.websocket.services import (
     mark_user_as_online,
     send_new_chat_created_ws_message,
 )
-
 
 socket_manager = WebSocketManager()
 logger = logging.getLogger(__name__)
@@ -74,8 +73,8 @@ async def new_message_handler(
         # Save message and broadcast it back
         created_at = datetime.now()
         message = Message(
-            id=str(uuid4()),
-            guid=str(uuid4()),
+            id=str(uuid.uuid7()),
+            guid=str(uuid.uuid7()),
             message_type=MessageMessageType.TEXT,
             content=message_schema.content,
             chat_id=chat_id,

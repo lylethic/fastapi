@@ -15,15 +15,18 @@ from app.schemas.merchant_profile import (
     MerchantProfilesUpdateBody,
 )
 
-from app.services.merchant_profile_service import service, get_with_extend_user
+from app.services.merchant_profile_service import merchant_profile_service
 from app.services.assistant_service import get_current_user, require_permissions
 
-router = APIRouter(prefix="/merchant_profiles", tags=["MerchantProfiles"])
+router = APIRouter(
+    prefix="/merchant_profiles",
+    tags=["MerchantProfiles"],
+)
 
 
 @router.get("/{id}", summary="Get merchant profile by id")
 async def get_by_id_async(id: str, db: AsyncSession = Depends(get_db)):
-    result = await get_with_extend_user(db=db, id=id)
+    result = await merchant_profile_service.get_with_extend_user(db=db, id=id)
     return success_response(
         data=result,
         message="Thành công",
@@ -39,7 +42,7 @@ async def delete(
         require_permissions(Permission.SYS_ADMIN, Permission.DELETE)
     ),
 ):
-    await service.soft_delete(db=db, id=id)
+    await merchant_profile_service.soft_delete(db=db, id=id)
     return success_response(
         data=None,
         message="Thành công",
@@ -57,7 +60,7 @@ async def update_async(
     payload: MerchantProfilesUpdateBody,
     db: AsyncSession = Depends(get_db),
 ):
-    result = await service.update(db=db, id=id, body=payload)
+    result = await merchant_profile_service.update(db=db, id=id, body=payload)
     return success_response(
         data=MerchantProfilesResponse.model_validate(result),
         message="Thành công",
@@ -74,7 +77,7 @@ async def get_all_async(
     db: AsyncSession = Depends(get_db),
     pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    roles = await service.get_all(db=db, pagination=pagination)
+    roles = await merchant_profile_service.get_all(db=db, pagination=pagination)
     return success_response(
         data=roles,
         message="Thành công",
@@ -88,7 +91,11 @@ async def post(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    result = await service.post(db=db, body=payload, current_user=current_user["id"])
+    result = await merchant_profile_service.create(
+        db=db,
+        body=payload,
+        current_user=current_user["id"],
+    )
     return success_response(
         data=MerchantProfilesResponse.model_validate(result),
         message="Thành công",

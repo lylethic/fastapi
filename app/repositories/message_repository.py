@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 from fastapi import HTTPException
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,18 +6,14 @@ from app.db.models import Chat, Message, Users
 from app.repositories.base_repository import BaseRepository
 from app.schemas.base_schema import BaseQueryPaginationRequest
 from app.schemas.message import (
-    MessageCreateBody,
     MessagePagination,
     MessageResponse,
-    MessageUpdateBody,
 )
 
 
 class MessageRepository(
     BaseRepository[
         Message,
-        MessageCreateBody,
-        MessageUpdateBody,
         MessageResponse,
         MessagePagination,
     ]
@@ -44,11 +38,6 @@ class MessageRepository(
                 Message.content.ilike(f"%{search}%"),
             )
         ]
-
-    def map_create_data(self, body: MessageCreateBody) -> dict:
-        data = body.model_dump(exclude_unset=True)
-        data["guid"] = str(uuid4())
-        return data
 
     async def user_exists(self, db: AsyncSession, user_id: str) -> bool:
         return await db.get(Users, user_id) is not None

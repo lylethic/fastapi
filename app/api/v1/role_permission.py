@@ -11,14 +11,8 @@ from app.schemas.rolepermission import (
     RolePermissionUpdateBody,
 )
 from app.services.assistant_service import require_permissions
-from app.services.role_permission_service import (
-    create_role_permission,
-    delete_role_permission,
-    get_role_permission_by_id,
-    get_role_permissions,
-    update_role_permission,
-)
 from app.schemas.base_schema import BaseQueryPaginationRequest
+from app.services.role_permission_service import role_permission_service
 
 router = APIRouter(prefix="/role-permissions", tags=["Role Permissions"])
 
@@ -32,7 +26,7 @@ router = APIRouter(prefix="/role-permissions", tags=["Role Permissions"])
 async def create_role_permission_api(
     payload: RolePermissionCreateBody, db: AsyncSession = Depends(get_db)
 ):
-    role_permission = await create_role_permission(db=db, body=payload)
+    role_permission = await role_permission_service.create(db=db, body=payload)
     return success_response(
         data=RolePermissionResponse.model_validate(role_permission),
         message="Thành công",
@@ -50,7 +44,9 @@ async def get_role_permissions_api(
     db: AsyncSession = Depends(get_db),
     pagination: BaseQueryPaginationRequest = Depends(),
 ):
-    role_permissions = await get_role_permissions(db=db, pagination=pagination)
+    role_permissions = await role_permission_service.get_role_permissions(
+        db=db, pagination=pagination
+    )
     return success_response(
         data=role_permissions,
         message="Thành công",
@@ -66,7 +62,7 @@ async def get_role_permissions_api(
 async def get_role_permission_by_id_api(
     role_id: str, permission_id: str, db: AsyncSession = Depends(get_db)
 ):
-    role_permission = await get_role_permission_by_id(
+    role_permission = await role_permission_service.get_by_keys(
         db=db, role_id=role_id, permission_id=permission_id
     )
     if not role_permission:
@@ -95,7 +91,7 @@ async def update_role_permission_api(
     payload: RolePermissionUpdateBody,
     db: AsyncSession = Depends(get_db),
 ):
-    role_permission = await update_role_permission(
+    role_permission = await role_permission_service.update_by_keys(
         db=db,
         role_id=role_id,
         permission_id=permission_id,
@@ -119,7 +115,7 @@ async def delete_role_permission_api(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(require_permissions(Permission.DELETE)),
 ):
-    await delete_role_permission(
+    await role_permission_service.soft_delete_by_keys(
         db=db,
         role_id=role_id,
         permission_id=permission_id,

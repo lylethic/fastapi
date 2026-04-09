@@ -1,5 +1,5 @@
 from datetime import datetime
-from uuid import uuid4
+import uuid
 from uuid import UUID
 
 from sqlalchemy import and_, func, select
@@ -28,8 +28,8 @@ async def create_direct_chat(
 ) -> Chat:
     try:
         chat = Chat(
-            id=str(uuid4()),
-            guid=str(uuid4()),
+            id=str(uuid.uuid7()),
+            guid=str(uuid.uuid7()),
             chat_type=ChatType.DIRECT,
         )
         chat.user.append(initiator_user)
@@ -39,13 +39,13 @@ async def create_direct_chat(
 
         # make empty read statuses for both users last_read_message_id = 0
         initiator_read_status = ReadStatus(
-            id=str(uuid4()),
+            id=str(uuid.uuid7()),
             chat_id=chat.id,
             user_id=initiator_user.id,
             last_read_message_id=None,
         )
         recipient_read_status = ReadStatus(
-            id=str(uuid4()),
+            id=str(uuid.uuid7()),
             chat_id=chat.id,
             user_id=recipient_user.id,
             last_read_message_id=None,
@@ -243,16 +243,18 @@ async def get_chat_messages(
             name=message.user.name,
             username=message.user.username,
             is_read=(
-                message.created <= other_user_last_read_created
-                if message.user.id == user_id
-                else message.created <= my_last_read_created
-            )
-            if (
-                other_user_last_read_created is not None
-                if message.user.id == user_id
-                else my_last_read_created is not None
-            )
-            else False,
+                (
+                    message.created <= other_user_last_read_created
+                    if message.user.id == user_id
+                    else message.created <= my_last_read_created
+                )
+                if (
+                    other_user_last_read_created is not None
+                    if message.user.id == user_id
+                    else my_last_read_created is not None
+                )
+                else False
+            ),
         )
         for message in messages
     ]
@@ -332,16 +334,18 @@ async def get_older_chat_messages(
             name=message.user.name,
             username=message.user.username,
             is_read=(
-                message.created <= other_user_last_read_created
-                if message.user.id == user_id
-                else message.created <= my_last_read_created
-            )
-            if (
-                other_user_last_read_created is not None
-                if message.user.id == user_id
-                else my_last_read_created is not None
-            )
-            else False,
+                (
+                    message.created <= other_user_last_read_created
+                    if message.user.id == user_id
+                    else message.created <= my_last_read_created
+                )
+                if (
+                    other_user_last_read_created is not None
+                    if message.user.id == user_id
+                    else my_last_read_created is not None
+                )
+                else False
+            ),
         )
         for message in older_messages
     ]
